@@ -1,10 +1,35 @@
 #include "render.h"
 
+#include <math.h>
+
 void render_stars(star_t const stars[], size_t n) {
     _render_clear();
 
+#ifndef NO_CROP
+    double aspect_ratio = (double)SCREEN_WIDTH / SCREEN_HEIGHT;
+    double b = 1.0 / sqrt(aspect_ratio * aspect_ratio + 1.0);
+    double a = aspect_ratio * b;
+    double screen_scale = fmin((SCREEN_WIDTH - 1) / a, (SCREEN_HEIGHT - 1) / b);
+#else  // NO_CROP
+    double screen_scale = fmin(SCREEN_WIDTH - 1, SCREEN_HEIGHT - 1);
+#endif // NO_CROP
+
     for (size_t i = 0; i < n; i++) {
         star_t const* star = &stars[i];
+
+#ifndef NO_CROP
+        // skip stars outside the inscribed rectangle
+        if (fabs(star->x) > a || fabs(star->y) > b) {
+            continue;
+        }
+#endif // NO_CROP
+
+        // convert normalized coords to screen coords
+        uint16_t screen_x = (uint16_t)(((SCREEN_WIDTH - 1) + star->x * screen_scale) / 2);
+        uint16_t screen_y = (uint16_t)(((SCREEN_HEIGHT - 1) - star->y * screen_scale) / 2);
+
+        // compute reference resolution to renderer resolution scaling factor
+        double scale = (SCREEN_WIDTH < SCREEN_HEIGHT ? SCREEN_WIDTH : SCREEN_HEIGHT) / 640.0;
 
         // determine color
         render_color_t color = RENDER_COLOR_WHITE;
@@ -13,13 +38,6 @@ void render_stars(star_t const stars[], size_t n) {
         } else if (star->intensity < 0.66) {
             color = RENDER_COLOR_LIGHT_GRAY;
         }
-
-        // convert normalized coords to screen coords
-        uint16_t screen_x = (uint16_t)((star->x + 1.0) / 2.0 * (SCREEN_WIDTH - 1));
-        uint16_t screen_y = (uint16_t)((-star->y + 1.0) / 2.0 * (SCREEN_HEIGHT - 1));
-
-        // compute reference resolution to renderer resolution scaling factor
-        double scale = (SCREEN_WIDTH < SCREEN_HEIGHT ? SCREEN_WIDTH : SCREEN_HEIGHT) / 640.0;
 
         // draw circle
         int8_t radius = 1 + (int8_t)(scale * (star->intensity * 3));

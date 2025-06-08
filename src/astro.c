@@ -7,6 +7,7 @@
 
 #define HALF_PI 1.57079632679489661923
 #define VMAG_MIN -1.5
+#define VMAG_MAX 12
 
 static int compare_stars(void const* p_a, void const* p_b) {
     double ia = ((star_t const*)p_a)->intensity;
@@ -98,7 +99,7 @@ bool get_stars(
 
             // compute normalized intensity
             double intensity = pow(10.0, -0.4 * _BSC_VMAG[i]);
-            double intensity_min = pow(10.0, -0.4 * vmag_max);
+            double intensity_min = pow(10.0, -0.4 * VMAG_MAX);
             double intensity_max = pow(10.0, -0.4 * VMAG_MIN);
             double norm = (intensity - intensity_min) / (intensity_max - intensity_min);
             norm = fmax(0.0, fmin(norm, 1.0));
