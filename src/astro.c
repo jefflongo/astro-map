@@ -16,8 +16,8 @@ static int compare_stars(void const* p_a, void const* p_b) {
 }
 
 bool get_stars(
-  double longitude,
   double latitude,
+  double longitude,
   struct tm const* time,
   double subsecond,
   double vmag_max,
@@ -49,7 +49,7 @@ bool get_stars(
 
     double utc1, utc2;
     if ((ret = eraDtf2d("UTC", year, month, day, hour, minute, second, &utc1, &utc2))) {
-        fprintf(stderr, "ERROR: eraDtf2d returned %d\n", ret);
+        fprintf(stderr, "ERROR: eraDtf2d failed with code %d\n", ret);
         return false;
     }
 
@@ -86,7 +86,7 @@ bool get_stars(
                &observed_dec,
                &observed_ra,
                &equation_of_origins))) {
-            fprintf(stderr, "ERROR: eraAtco13 returned %d at index %zu\n", ret, i);
+            fprintf(stderr, "ERROR: eraAtco13 failed at index %zu with code %d\n", i, ret);
             return false;
         }
 

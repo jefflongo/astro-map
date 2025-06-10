@@ -1,9 +1,11 @@
 #include "render.h"
 
+#include "board_render.h"
+
 #include <math.h>
 
 void render_stars(star_t const stars[], size_t n) {
-    _render_clear();
+    board_render_clear();
 
 #ifndef NO_CROP
     double aspect_ratio = (double)SCREEN_WIDTH / SCREEN_HEIGHT;
@@ -55,11 +57,11 @@ void render_stars(star_t const stars[], size_t n) {
                 }
                 py = (int32_t)screen_y + y;
                 if (py >= 0 && py < SCREEN_HEIGHT) {
-                    _render_pixel(px, py, color);
+                    board_render_pixel(px, py, color);
                 }
                 py = (int32_t)screen_y - y;
                 if (py >= 0 && py < SCREEN_HEIGHT) {
-                    _render_pixel(px, py, color);
+                    board_render_pixel(px, py, color);
                 }
             }
             for (int8_t dx = -y; dx <= y; dx++) {
@@ -70,11 +72,11 @@ void render_stars(star_t const stars[], size_t n) {
                 }
                 py = (int32_t)screen_y + x;
                 if (py >= 0 && py < SCREEN_HEIGHT) {
-                    _render_pixel(px, py, color);
+                    board_render_pixel(px, py, color);
                 }
                 py = (int32_t)screen_y - x;
                 if (py >= 0 && py < SCREEN_HEIGHT) {
-                    _render_pixel(px, py, color);
+                    board_render_pixel(px, py, color);
                 }
             }
 
@@ -88,5 +90,5 @@ void render_stars(star_t const stars[], size_t n) {
         }
     }
 
-    _render_commit();
+    board_render_commit();
 }

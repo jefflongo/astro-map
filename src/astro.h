@@ -15,8 +15,8 @@ typedef struct {
 } star_t;
 
 bool get_stars(
-  double longitude,
   double latitude,
+  double longitude,
   struct tm const* time,
   double subsecond,
   double vmag_max,
