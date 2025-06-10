@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
     while (run) {
         // get location
         double latitude, longitude;
-        board_gps_get_location(&latitude, &longitude);
+        board_gps_location(&latitude, &longitude);
 
         // get time
         time_t now = time(NULL);

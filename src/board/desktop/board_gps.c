@@ -44,7 +44,7 @@ void board_gps_deinit(void) {
     curl_global_cleanup();
 }
 
-bool board_gps_get_location(double* latitude, double* longitude) {
+bool board_gps_location(double* latitude, double* longitude) {
     CURLcode res = curl_easy_perform(curl);
     if (res != CURLE_OK) {
         fprintf(stderr, "ERROR: curl_easy_perform() failed: %s\n", curl_easy_strerror(res));

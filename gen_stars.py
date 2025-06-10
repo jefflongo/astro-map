@@ -3,14 +3,12 @@ import numpy as np
 from astropy.coordinates import Angle
 from astroquery.vizier import Vizier
 
-print("Loading Bright Star Catalog... ", end="", flush=True)
 v = Vizier(columns=["RAJ2000", "DEJ2000", "Vmag"], row_limit=-1)
 catalog = v.get_catalogs("V/50")[0]
 valid = (
     (catalog["RAJ2000"] != "") & (catalog["DEJ2000"] != "") & (~catalog["Vmag"].mask)
 )
 catalog = catalog[valid]
-print(f"{len(catalog)} stars found")
 
 ra = Angle(catalog["RAJ2000"], unit=u.hourangle).radian
 dec = Angle(catalog["DEJ2000"], unit=u.deg).radian
