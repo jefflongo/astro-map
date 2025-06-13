@@ -1,0 +1,9 @@
+[submodule "ext/STM32CubeG4"]
+	path = ext/STM32CubeG4
+	url = git@github.com:jefflongo/STM32CubeG4.git
+[submodule "ext/cmake-stm32"]
+	path = ext/cmake-stm32
+	url = git@github.com:jefflongo/cmake-stm32.git
+[submodule "ext/FreeRTOS"]
+	path = ext/FreeRTOS
+	url = git@github.com:FreeRTOS/FreeRTOS-Kernel.git

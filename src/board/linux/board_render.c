@@ -4,6 +4,7 @@
 
 uint16_t const SCREEN_WIDTH = 640;
 uint16_t const SCREEN_HEIGHT = 640;
+uint32_t const RENDER_FREQ_MS = 16;
 
 static SDL_Renderer* renderer = NULL;
 static SDL_Window* window = NULL;
@@ -45,14 +46,13 @@ void board_render_deinit(void) {
     SDL_Quit();
 }
 
-bool board_render_delay(void) {
+bool board_render_should_run(void) {
     SDL_Event e;
     while (SDL_PollEvent(&e) != 0) {
         if (e.type == SDL_QUIT) {
             return false;
         }
     }
-    SDL_Delay(16);
 
     return true;
 }

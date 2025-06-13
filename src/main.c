@@ -2,22 +2,26 @@
 #include "board.h"
 #include "render.h"
 
+// FreeRTOS
+#include "FreeRTOS.h"
+#include "task.h"
+
+#include <stdlib.h>
 #include <time.h>
 
 #define VMAG_MAX 6
 
-int main(int argc, char* argv[]) {
-    (void)argc;
-    (void)argv;
+static void main_task(void* args) {
+    (void)args;
 
-    bool init_success = true;
+    bool init_success = board_init();
     init_success = init_success && board_gps_init();
     init_success = init_success && board_render_init();
-    if (!init_success) {
-        goto cleanup;
-    }
 
-    bool run = true;
+    TickType_t last_wake = xTaskGetTickCount();
+    TickType_t frequency = pdMS_TO_TICKS(RENDER_FREQ_MS);
+
+    bool run = init_success;
     while (run) {
         // get location
         double latitude, longitude;
@@ -37,12 +41,28 @@ int main(int argc, char* argv[]) {
               latitude, longitude, time, subsecond, VMAG_MAX, stars, &n_stars_above_horizon)) {
             render_stars(stars, n_stars_above_horizon);
         }
-        run = board_render_delay();
+        if ((run = board_render_should_run())) {
+            vTaskDelayUntil(&last_wake, frequency);
+        }
     }
 
-cleanup:
+    // unreachable on embedded target
     board_gps_deinit();
     board_render_deinit();
 
-    return init_success ? 0 : 1;
+    exit(init_success ? 0 : 1);
+}
+
+int main(int argc, char* argv[]) {
+    (void)argc;
+    (void)argv;
+
+    xTaskCreate(main_task, "main_task", 4096, NULL, 1, NULL);
+    vTaskStartScheduler();
+
+    // unreachable
+    while (1)
+        ;
+
+    return 0;
 }
