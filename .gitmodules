@@ -7,3 +7,6 @@
 [submodule "ext/FreeRTOS"]
 	path = ext/FreeRTOS
 	url = git@github.com:FreeRTOS/FreeRTOS-Kernel.git
+[submodule "ext/erfa"]
+	path = ext/erfa
+	url = git@github.com:liberfa/erfa.git

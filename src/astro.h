@@ -2,11 +2,7 @@
 
 #include "bsc.h"
 
-#include <stdbool.h>
-#include <stddef.h>
 #include <time.h>
-
-#define COORD_BUFFER_SIZE BSC_SIZE
 
 typedef struct {
     double x;
@@ -14,11 +10,11 @@ typedef struct {
     double intensity;
 } star_t;
 
-bool get_stars(
+typedef void (*star_callback_t)(star_t const*);
+
+void get_stars(
   double latitude,
   double longitude,
   struct tm const* time,
   double subsecond,
-  double vmag_max,
-  star_t out[COORD_BUFFER_SIZE],
-  size_t* out_size);
+  star_callback_t on_star);

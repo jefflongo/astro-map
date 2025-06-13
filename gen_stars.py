@@ -1,14 +1,23 @@
+import argparse
+
 import astropy.units as u
 import numpy as np
 from astropy.coordinates import Angle
 from astroquery.vizier import Vizier
 
-v = Vizier(columns=["RAJ2000", "DEJ2000", "Vmag"], row_limit=-1)
-catalog = v.get_catalogs("V/50")[0]
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    nargs="?", type=float, help="Maximum visual magnitude", dest="vmag", default=6.0
+)
+args = parser.parse_args()
+
+v = Vizier(catalog="V/50", columns=["RAJ2000", "DEJ2000", "Vmag"], row_limit=-1)
+catalog = v.query_constraints(Vmag=f"<={args.vmag}")[0]
 valid = (
     (catalog["RAJ2000"] != "") & (catalog["DEJ2000"] != "") & (~catalog["Vmag"].mask)
 )
 catalog = catalog[valid]
+catalog.sort("Vmag")
 
 ra = Angle(catalog["RAJ2000"], unit=u.hourangle).radian
 dec = Angle(catalog["DEJ2000"], unit=u.deg).radian

@@ -30,3 +30,11 @@ void _exit(int status) {
     while (1)
         ;
 }
+
+int _kill(int pid, int sig) {
+    return -1;
+}
+
+int _getpid(void) {
+    return 1;
+}

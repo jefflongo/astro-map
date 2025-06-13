@@ -2,10 +2,16 @@
 
 #include "board_pins.h"
 
-#include <stdio.h>
 #include <stm32g4xx_ll_bus.h>
 #include <stm32g4xx_ll_gpio.h>
 #include <stm32g4xx_ll_usart.h>
+
+// clang-format off
+#include <FreeRTOS.h>
+#include <task.h>
+// clang-format on
+
+#include <stdio.h>
 
 void USART1_IRQHandler(void) {
     if (LL_USART_IsActiveFlag_RXNE(USART1)) {
@@ -43,7 +49,7 @@ bool board_gps_init(void) {
     LL_USART_Enable(USART1);
 
     LL_USART_EnableIT_RXNE(USART1);
-    NVIC_SetPriority(USART1_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));
+    NVIC_SetPriority(USART1_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 7, 0));
     NVIC_EnableIRQ(USART1_IRQn);
 
     while (!LL_USART_IsActiveFlag_TEACK(USART1) || !(LL_USART_IsActiveFlag_REACK(USART1)))
@@ -52,4 +58,8 @@ bool board_gps_init(void) {
     return true;
 }
 
-void board_gps_get_location(double* latitude, double* longitude) {}
+void board_gps_deinit(void) {}
+
+bool board_gps_location(double* latitude, double* longitude) {
+    return false;
+}

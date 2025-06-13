@@ -40,7 +40,7 @@ void platform_init(void) {
     LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SYSCFG);
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
 
-    NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_3);
+    NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);
 
     // disable internal pull-up for type C dead battery pins
     LL_PWR_DisableUCPDDeadBattery();

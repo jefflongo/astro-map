@@ -1,4 +1,8 @@
 #pragma once
+
+#include <assert.h>
+#include <stdint.h>
+
 /******************************************************************************/
 /* Hardware description related definitions. **********************************/
 /******************************************************************************/
@@ -9,7 +13,8 @@
  * settings.  Your application will certainly need a different value so set this
  * correctly. This is very often, but not always, equal to the main system clock
  * frequency. */
-#define configCPU_CLOCK_HZ (170000000UL)
+extern uint32_t SystemCoreClock;
+#define configCPU_CLOCK_HZ SystemCoreClock
 
 /* configSYSTICK_CLOCK_HZ is an optional parameter for ARM Cortex-M ports only.
  *
@@ -33,7 +38,7 @@
 
 /* configTICK_RATE_HZ sets frequency of the tick interrupt in Hz, normally
  * calculated from the configCPU_CLOCK_HZ value. */
-#define configTICK_RATE_HZ 100
+#define configTICK_RATE_HZ 1000
 
 /* Set configUSE_PREEMPTION to 1 to use pre-emptive scheduling.  Set
  * configUSE_PREEMPTION to 0 to use co-operative scheduling.
@@ -53,7 +58,7 @@
  * 0 to select the next task to run using a generic C algorithm that works for
  * all FreeRTOS ports.  Not all FreeRTOS ports have this option.  Defaults to 0
  * if left undefined. */
-#define configUSE_PORT_OPTIMISED_TASK_SELECTION 0
+#define configUSE_PORT_OPTIMISED_TASK_SELECTION 1
 
 /* Set configUSE_TICKLESS_IDLE to 1 to use the low power tickless mode.  Set to
  * 0 to keep the tick interrupt running at all times.  Not all FreeRTOS ports
@@ -65,7 +70,7 @@
 /* configMAX_PRIORITIES Sets the number of available task priorities.  Tasks can
  * be assigned priorities of 0 to (configMAX_PRIORITIES - 1).  Zero is the
  * lowest priority. */
-#define configMAX_PRIORITIES 5
+#define configMAX_PRIORITIES 4
 
 /* configMINIMAL_STACK_SIZE defines the size of the stack used by the Idle task
  * (in words, not in bytes!).  The kernel does not use this constant for any
@@ -266,12 +271,16 @@
 /******************************************************************************/
 /* Interrupt nesting behaviour configuration. *********************************/
 /******************************************************************************/
+#define configPRIO_BITS 4
+#define configLIBRARY_LOWEST_INTERRUPT_PRIORITY ((1 << configPRIO_BITS) - 1)
+#define configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY 5
 
 /* configKERNEL_INTERRUPT_PRIORITY sets the priority of the tick and context
  * switch performing interrupts.  Not supported by all FreeRTOS ports.  See
  * https://www.freertos.org/RTOS-Cortex-M3-M4.html for information specific to
  * ARM Cortex-M devices. */
-#define configKERNEL_INTERRUPT_PRIORITY 0
+#define configKERNEL_INTERRUPT_PRIORITY                                                            \
+    (configLIBRARY_LOWEST_INTERRUPT_PRIORITY << (8 - configPRIO_BITS))
 
 /* configMAX_SYSCALL_INTERRUPT_PRIORITY sets the interrupt priority above which
  * FreeRTOS API calls must not be made.  Interrupts above this priority are
@@ -279,7 +288,8 @@
  * to the highest interrupt priority (0).  Not supported by all FreeRTOS ports.
  * See https://www.freertos.org/RTOS-Cortex-M3-M4.html for information specific
  * to ARM Cortex-M devices. */
-#define configMAX_SYSCALL_INTERRUPT_PRIORITY 0
+#define configMAX_SYSCALL_INTERRUPT_PRIORITY                                                       \
+    (configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY << (8 - configPRIO_BITS))
 
 /* Another name for configMAX_SYSCALL_INTERRUPT_PRIORITY - the name used depends
  * on the FreeRTOS port. */
@@ -371,12 +381,7 @@
  * number of the failing assert (for example, "vAssertCalled( __FILE__, __LINE__
  * )" or it can simple disable interrupts and sit in a loop to halt all
  * execution on the failing line for viewing in a debugger. */
-#define configASSERT(x)                                                                            \
-    if ((x) == 0) {                                                                                \
-        taskDISABLE_INTERRUPTS();                                                                  \
-        for (;;)                                                                                   \
-            ;                                                                                      \
-    }
+#define configASSERT(x) assert(x)
 
 /******************************************************************************/
 /* FreeRTOS MPU specific definitions. *****************************************/
@@ -580,6 +585,9 @@
  *
  * Defaults to 1 if left undefined. */
 #define configCHECK_HANDLER_INSTALLATION 1
+#define vPortSVCHandler SVC_Handler
+#define xPortPendSVHandler PendSV_Handler
+#define xPortSysTickHandler SysTick_Handler
 
 /******************************************************************************/
 /* Definitions that include or exclude functionality. *************************/

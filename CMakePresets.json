@@ -8,12 +8,12 @@
     "configurePresets": [
         {
             "name": "debug-linux",
-            "displayName": "Debug",
+            "displayName": "Debug (Linux)",
             "description": "Debug build preset",
             "generator": "Unix Makefiles",
             "binaryDir": "${sourceDir}/build",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug (Linux)",
+                "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/bin",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "1"
             }
@@ -25,7 +25,7 @@
             "toolchainFile": "${sourceDir}/ext/cmake-stm32/cmake/cortex-m4f.cmake"
         },
         {
-            "name": "release",
+            "name": "release-linux",
             "inherits": "debug-linux",
             "displayName": "Release (Linux)",
             "description": "Release build preset",

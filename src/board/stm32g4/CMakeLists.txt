@@ -4,8 +4,12 @@ find_package(STM32Cube REQUIRED)
 
 add_library(
   board_stm32g4 OBJECT
-  ${CMAKE_CURRENT_SOURCE_DIR}/board.c ${CMAKE_CURRENT_SOURCE_DIR}/board_gps.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/platform.c ${CMAKE_CURRENT_SOURCE_DIR}/syscalls.c)
+  ${CMAKE_CURRENT_SOURCE_DIR}/board.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/board_gps.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/board_render.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/freertos_hooks.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/platform.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/syscalls.c)
 target_include_directories(board_stm32g4
                            PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include)
 target_include_directories(board_stm32g4 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
@@ -47,7 +51,7 @@ set(FREERTOS_HEAP
 set(FREERTOS_PORT
     "GCC_ARM_CM4F"
     CACHE STRING "" FORCE)
-add_subdirectory(${PROJECT_SOURCE_DIR}/ext/FreeRTOS
+add_subdirectory(${CMAKE_SOURCE_DIR}/ext/FreeRTOS
                  ${CMAKE_CURRENT_BINARY_DIR}/ext/FreeRTOS)
 
 target_link_libraries(board_stm32g4 PUBLIC freertos_config freertos_kernel)

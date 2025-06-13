@@ -2,27 +2,19 @@
 
 #include <erfa.h>
 #include <math.h>
+#include <stddef.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 #define HALF_PI 1.57079632679489661923
 #define VMAG_MIN -1.5
 #define VMAG_MAX 12
 
-static int compare_stars(void const* p_a, void const* p_b) {
-    double ia = ((star_t const*)p_a)->intensity;
-    double ib = ((star_t const*)p_b)->intensity;
-    return (ia > ib) - (ia < ib);
-}
-
-bool get_stars(
+void get_stars(
   double latitude,
   double longitude,
   struct tm const* time,
   double subsecond,
-  double vmag_max,
-  star_t out[COORD_BUFFER_SIZE],
-  size_t* out_size) {
+  star_callback_t on_star) {
     int ret;
 
     double height = 0.0;
@@ -45,19 +37,14 @@ bool get_stars(
     int minute = time->tm_min;
     double second = time->tm_sec + subsecond;
 
-    *out_size = 0;
-
     double utc1, utc2;
     if ((ret = eraDtf2d("UTC", year, month, day, hour, minute, second, &utc1, &utc2))) {
         fprintf(stderr, "ERROR: eraDtf2d failed with code %d\n", ret);
-        return false;
+        return;
     }
 
-    for (size_t i = 0; i < BSC_SIZE; i++) {
-        if (_BSC_VMAG[i] > vmag_max) {
-            continue;
-        }
-
+    // stars are sorted lowest magnitude first. output highest magnitude first
+    for (size_t i = BSC_SIZE; i-- > 0;) {
         double azimuth, zenith_distance;
         double observed_hour_angle, observed_dec, observed_ra, equation_of_origins;
 
@@ -87,16 +74,12 @@ bool get_stars(
                &observed_ra,
                &equation_of_origins))) {
             fprintf(stderr, "ERROR: eraAtco13 failed at index %zu with code %d\n", i, ret);
-            return false;
+            continue;
         }
 
         double r = zenith_distance / HALF_PI;
         // filter below horizon
         if (r <= 1) {
-            size_t j = (*out_size)++;
-            out[j].x = -r * sin(azimuth);
-            out[j].y = r * cos(azimuth);
-
             // compute normalized intensity
             double intensity = pow(10.0, -0.4 * _BSC_VMAG[i]);
             double intensity_min = pow(10.0, -0.4 * VMAG_MAX);
@@ -105,12 +88,14 @@ bool get_stars(
             norm = fmax(0.0, fmin(norm, 1.0));
 
             // apply an exponential scaling to emphasize "decently bright" stars
-            out[j].intensity = pow(norm, 0.25);
+            intensity = pow(norm, 0.25);
+
+            star_t star = {
+                .x = r * sin(azimuth),
+                .y = r * cos(azimuth),
+                .intensity = intensity,
+            };
+            on_star(&star);
         }
     }
-
-    // sort by ascending intensity
-    qsort(out, *out_size, sizeof(star_t), compare_stars);
-
-    return true;
 }
