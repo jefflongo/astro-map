@@ -4,14 +4,14 @@
 #include <stdint.h>
 #include <string.h>
 
+#define DEG_TO_RAD(x) ((x) * 3.14159265358979323846 / 180.0)
+
 static CURL* curl = NULL;
 static char curl_buffer[32];
 static size_t curl_pos = 0;
 
 static double gps_latitude = 0;
 static double gps_longitude = 0;
-
-#define DEG_TO_RAD(x) ((x) * 3.14159265358979323846 / 180.0)
 
 size_t write_callback(void* ptr, size_t size, size_t nmemb, void* userdata) {
     (void)userdata;

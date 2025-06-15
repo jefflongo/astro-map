@@ -135,7 +135,7 @@ int main(int argc, char* argv[]) {
     (void)argv;
 
     assert(board_init());
-    assert(xTaskCreate(main_task, "main_task", 256, NULL, 1, NULL) == pdPASS);
+    assert(xTaskCreate(main_task, "main", 256, NULL, 1, NULL) == pdPASS);
     vTaskStartScheduler();
 
     // unreachable
