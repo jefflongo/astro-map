@@ -6,3 +6,7 @@ void vApplicationStackOverflowHook(TaskHandle_t xTask, char* pcTaskName) {
     (void)pcTaskName;
     configASSERT(0);
 }
+
+void vApplicationMallocFailedHook(void) {
+    configASSERT(0);
+}

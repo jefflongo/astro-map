@@ -18,25 +18,22 @@ target_include_directories(board_stm32g4 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 generate_stm32cube(
   stm32g431
   LL_DRIVERS
-  dma
   exti
   gpio
   pwr
   rcc
   rtc
-  tim
   usart
   utils)
 
 target_link_libraries(
   board_stm32g4
   PRIVATE stm32::stm32g431_cmsis
-          stm32::stm32g431_ll_dma
           stm32::stm32g431_ll_exti
           stm32::stm32g431_ll_gpio
           stm32::stm32g431_ll_pwr
           stm32::stm32g431_ll_rcc
-          stm32::stm32g431_ll_tim
+          stm32::stm32g431_ll_rtc
           stm32::stm32g431_ll_usart
           stm32::stm32g431_ll_utils
           freertos_kernel

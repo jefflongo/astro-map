@@ -1,3 +1,4 @@
+#include <FreeRTOS.h>
 #include <errno.h>
 #include <stddef.h>
 
@@ -27,6 +28,7 @@ int _lseek(int fd, int offset, int whence) {
 }
 
 void _exit(int status) {
+    portDISABLE_INTERRUPTS();
     while (1)
         ;
 }

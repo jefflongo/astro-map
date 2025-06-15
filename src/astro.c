@@ -10,10 +10,10 @@
 #define VMAG_MAX 12
 
 void get_stars(
-  double latitude,
-  double longitude,
   struct tm const* time,
   double subsecond,
+  double latitude,
+  double longitude,
   star_callback_t on_star) {
     int ret;
 
