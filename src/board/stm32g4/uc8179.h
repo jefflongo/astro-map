@@ -1,0 +1,80 @@
+#pragma once
+
+// main settings
+#define UC8179_CMD_PANEL_SETTING 0x00
+
+// power commands/settings
+#define UC8179_CMD_POWER_SETTING 0x01
+#define UC8179_CMD_POWER_OFF 0x02
+#define UC8179_CMD_POWER_OFF_SEQ_SETTING 0x03
+#define UC8179_CMD_POWER_ON 0x04
+#define UC8179_CMD_POWER_ON_MEASURE 0x05
+#define UC8179_CMD_BOOSTER_SOFT_START 0x06
+#define UC8179_CMD_DEEP_SLEEP 0x07
+
+// display update
+#define UC8179_CMD_DATA_TX1 0x10
+#define UC8179_CMD_DATA_STOP 0x11
+#define UC8179_CMD_REFRESH 0x12
+#define UC8179_CMD_DATA_TX2 0x13
+
+// interface settings
+#define UC8179_CMD_DUAL_SPI 0x15
+#define UC8179_CMD_AUTO_SEQUENCE 0x17
+
+// LUT configuration
+#define UC8179_CMD_VCOM_LUT 0x20
+#define UC8179_CMD_W2W_LUT 0x21
+#define UC8179_CMD_K2W_LUT 0x22
+#define UC8179_CMD_W2K_LUT 0x23
+#define UC8179_CMD_K2K_LUT 0x24
+#define UC8179_CMD_BORDER_LUT 0x25
+#define UC8179_CMD_LUT_OPTION 0x2a
+#define UC8179_CMD_KW_LUT_OPTION 0x2b
+
+// frame rate selection
+#define UC8179_CMD_PLL_CTRL 0x30
+
+// temperature sensor configuration
+#define UC8179_CMD_TEMP_SENS_CAL 0x40
+#define UC8179_CMD_TEMP_SENS_SEL 0x41
+#define UC8179_CMD_TEMP_SENS_WRITE 0x42
+#define UC8179_CMD_TEMP_SENS_READ 0x43
+
+// test for panel break
+#define UC8179_CMD_PANEL_BRK_CHECK 0x44
+
+// voltage/clock configurations
+#define UC8179_CMD_VCOM_DATA_INT_SETTING 0x50
+#define UC8179_CMD_LOW_POWER_DETECT 0x51
+#define UC8179_CMD_END_VOLTAGE_SETTING 0x52
+#define UC8179_CMD_TCON_SETTING 0x60
+
+// resolution settings
+#define UC8179_CMD_RESOLUTION_SETTING 0x61
+#define UC8179_CMD_GATE_SOURCE_START_SETTING 0x65
+
+// revision/status
+#define UC8179_CMD_REVISION 0x70
+#define UC8179_CMD_GET_STATUS 0x71
+
+// VCOM settings
+#define UC8179_CMD_AUTO_MEAS_VCOM 0x80
+#define UC8179_CMD_VCOM_DC_SETTING 0x82
+
+// partial refresh
+#define UC8179_CMD_PARTIAL_WINDOW 0x90
+#define UC8179_CMD_PARTIAL_IN 0x91
+#define UC8179_CMD_PARTIAL_OUT 0x92
+
+// programming/OTP
+#define UC8179_CMD_PROGRAM_MODE 0xA0
+#define UC8179_CMD_ACTIVE_PROGRAMMING 0xA1
+#define UC8179_CMD_READ_OTP 0xA2
+
+// other
+#define UC8179_CMD_CASCADE_SETTING 0xE0
+#define UC8179_CMD_POWER_SAVING 0xE3
+#define UC8179_CMD_LVD_SEL 0xE4
+#define UC8179_CMD_FORCE_TEMP 0xE5
+#define UC8179_CMD_TEMP BOUNDARY_PHASE_C2 0xE7

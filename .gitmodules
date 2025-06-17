@@ -1,6 +1,6 @@
 [submodule "ext/STM32CubeG4"]
 	path = ext/STM32CubeG4
-	url = git@github.com:jefflongo/STM32CubeG4.git
+	url = git@github.com:STMicroelectronics/STM32CubeG4.git
 [submodule "ext/cmake-stm32"]
 	path = ext/cmake-stm32
 	url = git@github.com:jefflongo/cmake-stm32.git

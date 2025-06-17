@@ -48,6 +48,7 @@ bool board_init(void) {
 
     // enable gpio clocks
     LL_AHB2_GRP1_EnableClock(LL_AHB2_GRP1_PERIPH_GPIOA);
+    LL_AHB2_GRP1_EnableClock(LL_AHB2_GRP1_PERIPH_GPIOB);
 
     board_debug_init();
     __enable_irq();

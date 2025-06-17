@@ -4,10 +4,10 @@
 #include <stdint.h>
 
 typedef enum {
-    RENDER_COLOR_BLACK = 0x00,
-    RENDER_COLOR_DARK_GRAY = 0x55,
-    RENDER_COLOR_LIGHT_GRAY = 0xAA,
-    RENDER_COLOR_WHITE = 0xFF,
+    RENDER_COLOR_BLACK,
+    RENDER_COLOR_DARK_GRAY,
+    RENDER_COLOR_LIGHT_GRAY,
+    RENDER_COLOR_WHITE,
 } render_color_t;
 
 extern uint16_t const SCREEN_WIDTH;

@@ -10,8 +10,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-// TODO: DELETE
-__attribute__((used)) static void render_star(star_t const* star) {
+static void render_star(star_t const* star) {
 #ifndef NO_CROP
     double const aspect_ratio = (double)SCREEN_WIDTH / SCREEN_HEIGHT;
     double const b = 1.0 / sqrt(aspect_ratio * aspect_ratio + 1.0);
@@ -98,7 +97,7 @@ static void main_task(void* args) {
     bool init_success = board_gps_init() && board_render_init();
 
     TickType_t last_wake = xTaskGetTickCount();
-    TickType_t frequency = pdMS_TO_TICKS(1000);
+    TickType_t frequency = pdMS_TO_TICKS(RENDER_FREQ_MS);
 
     bool run = init_success;
     while (run) {
@@ -108,9 +107,11 @@ static void main_task(void* args) {
         if (board_gps_time_location(&time, &subsecond, &latitude, &longitude)) {
             // get stars at location / time
             board_render_clear();
-            // get_stars(&time, subsecond, latitude, longitude, render_star);
+            get_stars(&time, subsecond, latitude, longitude, render_star);
             board_render_commit();
         }
+
+        board_render_commit();
 
         if ((run = board_render_should_run())) {
             vTaskDelayUntil(&last_wake, frequency);

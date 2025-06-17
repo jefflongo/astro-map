@@ -16,28 +16,30 @@ target_include_directories(board_stm32g4 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 # configure STM32Cube
 generate_stm32cube(
-  stm32g431
+  stm32g491
   LL_DRIVERS
   exti
   gpio
   pwr
   rcc
   rtc
+  spi
   usart
   utils)
 
 target_link_libraries(
   board_stm32g4
-  PRIVATE stm32::stm32g431_cmsis
-          stm32::stm32g431_ll_exti
-          stm32::stm32g431_ll_gpio
-          stm32::stm32g431_ll_pwr
-          stm32::stm32g431_ll_rcc
-          stm32::stm32g431_ll_rtc
-          stm32::stm32g431_ll_usart
-          stm32::stm32g431_ll_utils
+  PRIVATE stm32::stm32g491_cmsis
+          stm32::stm32g491_ll_exti
+          stm32::stm32g491_ll_gpio
+          stm32::stm32g491_ll_pwr
+          stm32::stm32g491_ll_rcc
+          stm32::stm32g491_ll_rtc
+          stm32::stm32g491_ll_spi
+          stm32::stm32g491_ll_usart
+          stm32::stm32g491_ll_utils
           freertos_kernel
-          "-T${CMAKE_CURRENT_SOURCE_DIR}/stm32g431kbtx.ld")
+          "-T${CMAKE_CURRENT_SOURCE_DIR}/stm32g491retx.ld")
 
 # configure FreeRTOS
 add_subdirectory(freertos)
