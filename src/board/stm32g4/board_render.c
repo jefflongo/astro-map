@@ -4,6 +4,7 @@
 #include "uc8179.h"
 
 #include <stm32g4xx_ll_bus.h>
+#include <stm32g4xx_ll_exti.h>
 #include <stm32g4xx_ll_spi.h>
 
 // clang-format off
@@ -19,14 +20,30 @@
 
 uint16_t const SCREEN_WIDTH = WIDTH;
 uint16_t const SCREEN_HEIGHT = HEIGHT;
-uint32_t const RENDER_FREQ_MS = 60000;
+uint32_t const RENDER_FREQ_MS = 60 * 1000;
 
 static uint8_t framebuffer[2][WIDTH * HEIGHT / 8];
 
 #undef WIDTH
 #undef HEIGHT
 
-void write_command(uint8_t command) {
+static volatile TaskHandle_t task_waiting_on_busy = NULL;
+
+void DISPLAY_BUSY_IRQHandler(void) {
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+    if (LL_EXTI_IsActiveFlag_0_31(DISPLAY_BUSY_EXTI_LINE)) {
+        LL_EXTI_ClearFlag_0_31(DISPLAY_BUSY_EXTI_LINE);
+        if (task_waiting_on_busy) {
+            vTaskNotifyGiveFromISR(task_waiting_on_busy, &xHigherPriorityTaskWoken);
+            task_waiting_on_busy = NULL;
+        }
+    }
+
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
+static void write_command(uint8_t command) {
     LL_GPIO_ResetOutputPin(DISPLAY_DC_PORT, DISPLAY_DC_PIN);
     LL_GPIO_ResetOutputPin(DISPLAY_SS_PORT, DISPLAY_SS_PIN);
 
@@ -40,7 +57,7 @@ void write_command(uint8_t command) {
     LL_GPIO_SetOutputPin(DISPLAY_DC_PORT, DISPLAY_DC_PIN);
 }
 
-void write_data(uint8_t data) {
+static void write_data(uint8_t data) {
     LL_GPIO_ResetOutputPin(DISPLAY_SS_PORT, DISPLAY_SS_PIN);
 
     while (!LL_SPI_IsActiveFlag_TXE(SPI1))
@@ -52,29 +69,28 @@ void write_data(uint8_t data) {
     LL_GPIO_SetOutputPin(DISPLAY_SS_PORT, DISPLAY_SS_PIN);
 }
 
-static void wait_not_busy(void) {
-    vTaskDelay(pdMS_TO_TICKS(1));
-    while (!LL_GPIO_IsInputPinSet(DISPLAY_BUSY_PORT, DISPLAY_BUSY_PIN)) {
-        vTaskDelay(pdMS_TO_TICKS(10));
-    }
-}
-
 static void display_power_on(void) {
+    task_waiting_on_busy = xTaskGetCurrentTaskHandle();
+    xTaskNotifyStateClear(task_waiting_on_busy);
+    ulTaskNotifyValueClear(task_waiting_on_busy, UINT32_MAX);
     write_command(UC8179_CMD_POWER_ON);
-    vTaskDelay(pdMS_TO_TICKS(100)); // > 80ms after powering on
-    wait_not_busy();
+    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 }
 
 static void display_power_off(void) {
+    task_waiting_on_busy = xTaskGetCurrentTaskHandle();
+    xTaskNotifyStateClear(task_waiting_on_busy);
+    ulTaskNotifyValueClear(task_waiting_on_busy, UINT32_MAX);
     write_command(UC8179_CMD_POWER_OFF);
-    vTaskDelay(pdMS_TO_TICKS(10));
-    wait_not_busy();
+    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 }
 
 static void display_refresh(void) {
+    task_waiting_on_busy = xTaskGetCurrentTaskHandle();
+    xTaskNotifyStateClear(task_waiting_on_busy);
+    ulTaskNotifyValueClear(task_waiting_on_busy, UINT32_MAX);
     write_command(UC8179_CMD_REFRESH);
-    vTaskDelay(pdMS_TO_TICKS(1));
-    wait_not_busy();
+    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 }
 
 static void display_init(void) {
@@ -114,7 +130,7 @@ static void display_init(void) {
     write_data(0x20); // configure data polarity (0 -> black, 1 -> white)
     write_data(0x07); // use default VCOM/data interval
 
-    static uint8_t const lut_vcom[] = {
+    uint8_t const lut_vcom[] = {
         0x00, 0x0A, 0x00, 0x00, 0x00, 0x01, // state 1
         0x60, 0x14, 0x14, 0x00, 0x00, 0x01, // state 2
         0x00, 0x14, 0x00, 0x00, 0x00, 0x01, // state 3
@@ -127,7 +143,7 @@ static void display_init(void) {
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // state 10 (KWR mode only)
     };
 
-    static uint8_t const lut_ww[] = {
+    uint8_t const lut_ww[] = {
         0x40, 0x0A, 0x00, 0x00, 0x00, 0x01, // state 1
         0x90, 0x14, 0x14, 0x00, 0x00, 0x01, // state 2
         0x10, 0x14, 0x0A, 0x00, 0x00, 0x01, // state 3
@@ -137,7 +153,7 @@ static void display_init(void) {
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // state 7
     };
 
-    static uint8_t const lut_bw[] = {
+    uint8_t const lut_bw[] = {
         0x40, 0x0A, 0x00, 0x00, 0x00, 0x01, // state 1
         0x90, 0x14, 0x14, 0x00, 0x00, 0x01, // state 2
         0x00, 0x14, 0x0A, 0x00, 0x00, 0x01, // state 3
@@ -147,7 +163,7 @@ static void display_init(void) {
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // state 7
     };
 
-    static uint8_t const lut_wb[] = {
+    uint8_t const lut_wb[] = {
         0x40, 0x0A, 0x00, 0x00, 0x00, 0x01, // state 1
         0x90, 0x14, 0x14, 0x00, 0x00, 0x01, // state 2
         0x00, 0x14, 0x0A, 0x00, 0x00, 0x01, // state 3
@@ -157,7 +173,7 @@ static void display_init(void) {
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // state 7
     };
 
-    static uint8_t const lut_bb[] = {
+    uint8_t const lut_bb[] = {
         0x80, 0x0A, 0x00, 0x00, 0x00, 0x01, // state 1
         0x90, 0x14, 0x14, 0x00, 0x00, 0x01, // state 2
         0x20, 0x14, 0x0A, 0x00, 0x00, 0x01, // state 3
@@ -229,6 +245,16 @@ bool board_render_init(void) {
     LL_GPIO_SetPinPull(DISPLAY_BUSY_PORT, DISPLAY_BUSY_PIN, LL_GPIO_PULL_DOWN);
     LL_GPIO_SetPinMode(DISPLAY_BUSY_PORT, DISPLAY_BUSY_PIN, LL_GPIO_MODE_INPUT);
 
+    LL_SYSCFG_SetEXTISource(DISPLAY_BUSY_SYSCFG_EXTI_PORT, DISPLAY_BUSY_SYSCFG_EXTI_LINE);
+    LL_EXTI_InitTypeDef conn_irq_conf = {
+        .Line_0_31 = DISPLAY_BUSY_EXTI_LINE,
+        .Line_32_63 = 0,
+        .LineCommand = ENABLE,
+        .Mode = LL_EXTI_MODE_IT,
+        .Trigger = LL_EXTI_TRIGGER_RISING,
+    };
+    LL_EXTI_Init(&conn_irq_conf);
+
     LL_SPI_InitTypeDef spi_config = {
         .TransferDirection = LL_SPI_FULL_DUPLEX,
         .Mode = LL_SPI_MODE_MASTER,
@@ -246,6 +272,9 @@ bool board_render_init(void) {
     LL_SPI_Enable(SPI1);
 
     display_init();
+
+    NVIC_SetPriority(DISPLAY_BUSY_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 7, 0));
+    NVIC_EnableIRQ(DISPLAY_BUSY_IRQn);
 
     board_render_clear();
     board_render_commit();

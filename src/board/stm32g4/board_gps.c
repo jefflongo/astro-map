@@ -21,6 +21,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#define GPS_TASK_FREQ_MS (10 * 60 * 1000)
+
 #define RTC_VALID_MAGIC 0x32F2
 
 #define RTC_PREDIV_S 255
@@ -52,9 +54,11 @@ static void gps_rx_task(void* args) {
     size_t const payload_size = sizeof(message) - 8;
     uint8_t ck_a, ck_b;
 
-    bool rtc_valid = LL_RTC_BKP_GetRegister(RTC, LL_RTC_BKP_DR0) == RTC_VALID_MAGIC;
+    bool backup_regs_valid = LL_RTC_BKP_GetRegister(RTC, LL_RTC_BKP_DR0) == RTC_VALID_MAGIC;
 
     while (1) {
+        bool time_location_updated = false;
+
         xStreamBufferReceive(
           uart_stream,
           &message[state],
@@ -147,6 +151,10 @@ static void gps_rx_task(void* args) {
 
                     xSemaphoreTake(gps_mutex, portMAX_DELAY);
 
+                    // update location
+                    gps_latitude = latitude;
+                    gps_longitude = longitude;
+
                     // update RTC
                     LL_RTC_DisableWriteProtection(RTC);
                     if (LL_RTC_EnterInitMode(RTC) == SUCCESS) {
@@ -163,43 +171,46 @@ static void gps_rx_task(void* args) {
                           __LL_RTC_CONVERT_BIN2BCD(day),
                           __LL_RTC_CONVERT_BIN2BCD(month),
                           __LL_RTC_CONVERT_BIN2BCD(year));
+
+                        time_location_updated = true;
                     }
                     LL_RTC_DisableInitMode(RTC);
                     LL_RTC_WaitForSynchro(RTC);
                     LL_RTC_EnableWriteProtection(RTC);
 
-                    // update location
-                    gps_latitude = latitude;
-                    gps_longitude = longitude;
-
                     xSemaphoreGive(gps_mutex);
 
-                    // backup location
-                    if (!rtc_valid) {
-                        // load location from backup
-                        uint64_t latitude_bits;
-                        memcpy(&latitude_bits, &gps_latitude, sizeof(double));
-                        uint32_t latitude_low = (uint32_t)(latitude_bits & 0xFFFFFFFF);
-                        uint32_t latitude_high = (uint32_t)(latitude_bits >> 32);
-                        LL_RTC_BKP_SetRegister(RTC, LL_RTC_BKP_DR1, latitude_low);
-                        LL_RTC_BKP_SetRegister(RTC, LL_RTC_BKP_DR2, latitude_high);
+                    // store location into backup registers
+                    uint64_t latitude_bits;
+                    memcpy(&latitude_bits, &gps_latitude, sizeof(double));
+                    uint32_t latitude_low = (uint32_t)(latitude_bits & 0xFFFFFFFF);
+                    uint32_t latitude_high = (uint32_t)(latitude_bits >> 32);
+                    LL_RTC_BKP_SetRegister(RTC, LL_RTC_BKP_DR1, latitude_low);
+                    LL_RTC_BKP_SetRegister(RTC, LL_RTC_BKP_DR2, latitude_high);
 
-                        uint64_t longitude_bits;
-                        memcpy(&longitude_bits, &gps_longitude, sizeof(double));
-                        uint32_t longitude_low = (uint32_t)(longitude_bits & 0xFFFFFFFF);
-                        uint32_t longitude_high = (uint32_t)(longitude_bits >> 32);
-                        LL_RTC_BKP_SetRegister(RTC, LL_RTC_BKP_DR1, longitude_low);
-                        LL_RTC_BKP_SetRegister(RTC, LL_RTC_BKP_DR2, longitude_high);
+                    uint64_t longitude_bits;
+                    memcpy(&longitude_bits, &gps_longitude, sizeof(double));
+                    uint32_t longitude_low = (uint32_t)(longitude_bits & 0xFFFFFFFF);
+                    uint32_t longitude_high = (uint32_t)(longitude_bits >> 32);
+                    LL_RTC_BKP_SetRegister(RTC, LL_RTC_BKP_DR3, longitude_low);
+                    LL_RTC_BKP_SetRegister(RTC, LL_RTC_BKP_DR4, longitude_high);
 
-                        // mark as valid
+                    if (!backup_regs_valid) {
                         LL_RTC_BKP_SetRegister(RTC, LL_RTC_BKP_DR0, RTC_VALID_MAGIC);
-                        rtc_valid = true;
+                        backup_regs_valid = true;
                     }
                 }
 
                 state = HEADER1;
                 xStreamBufferSetTriggerLevel(uart_stream, 1);
                 break;
+        }
+
+        // wait before listening to the GPS again
+        if (time_location_updated) {
+            LL_USART_DisableIT_RXNE(USART1);
+            vTaskDelay(pdMS_TO_TICKS(GPS_TASK_FREQ_MS));
+            LL_USART_EnableIT_RXNE(USART1);
         }
     }
 }
@@ -208,8 +219,9 @@ void USART1_IRQHandler(void) {
     if (LL_USART_IsActiveFlag_RXNE(USART1)) {
         char data = LL_USART_ReceiveData8(USART1);
         xStreamBufferSendFromISR(uart_stream, &data, 1, pdFALSE);
-        portYIELD_FROM_ISR(pdFALSE);
     }
+
+    portYIELD_FROM_ISR(pdFALSE);
 }
 
 static void rtc_init(void) {

@@ -97,7 +97,7 @@ static void main_task(void* args) {
     bool init_success = board_gps_init() && board_render_init();
 
     TickType_t last_wake = xTaskGetTickCount();
-    TickType_t frequency = pdMS_TO_TICKS(RENDER_FREQ_MS);
+    TickType_t const frequency = pdMS_TO_TICKS(RENDER_FREQ_MS);
 
     bool run = init_success;
     while (run) {
@@ -110,8 +110,6 @@ static void main_task(void* args) {
             get_stars(&time, subsecond, latitude, longitude, render_star);
             board_render_commit();
         }
-
-        board_render_commit();
 
         if ((run = board_render_should_run())) {
             vTaskDelayUntil(&last_wake, frequency);

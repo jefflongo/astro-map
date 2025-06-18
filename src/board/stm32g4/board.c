@@ -55,7 +55,3 @@ bool board_init(void) {
 
     return true;
 }
-
-void board_sleep(uint32_t ms) {
-    LL_mDelay(ms);
-}
