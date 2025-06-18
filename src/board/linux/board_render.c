@@ -2,8 +2,8 @@
 
 #include <SDL2/SDL.h>
 
-uint16_t const SCREEN_WIDTH = 640;
-uint16_t const SCREEN_HEIGHT = 640;
+uint16_t const RENDER_WIDTH = 640;
+uint16_t const RENDER_HEIGHT = 640;
 uint32_t const RENDER_FREQ_MS = 16;
 
 static SDL_Renderer* renderer = NULL;
@@ -19,8 +19,8 @@ bool board_render_init(void) {
       "Sky Map",
       SDL_WINDOWPOS_UNDEFINED,
       SDL_WINDOWPOS_UNDEFINED,
-      SCREEN_WIDTH,
-      SCREEN_HEIGHT,
+      RENDER_WIDTH,
+      RENDER_HEIGHT,
       SDL_WINDOW_SHOWN);
 
     if (window == NULL) {

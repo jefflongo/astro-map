@@ -18,8 +18,8 @@
 #define WIDTH 648
 #define HEIGHT 480
 
-uint16_t const SCREEN_WIDTH = WIDTH;
-uint16_t const SCREEN_HEIGHT = HEIGHT;
+uint16_t const RENDER_WIDTH = WIDTH;
+uint16_t const RENDER_HEIGHT = HEIGHT;
 uint32_t const RENDER_FREQ_MS = 60 * 1000;
 
 static uint8_t framebuffer[2][WIDTH * HEIGHT / 8];
@@ -112,10 +112,10 @@ static void display_init(void) {
     write_data(0x06); // 50 Hz framerate
 
     write_command(UC8179_CMD_RESOLUTION_SETTING);
-    write_data((uint8_t)(SCREEN_WIDTH >> 8));
-    write_data((uint8_t)(SCREEN_WIDTH & 0xFF));
-    write_data((uint8_t)(SCREEN_HEIGHT >> 8));
-    write_data((uint8_t)(SCREEN_HEIGHT & 0xFF));
+    write_data((uint8_t)(RENDER_WIDTH >> 8));
+    write_data((uint8_t)(RENDER_WIDTH & 0xFF));
+    write_data((uint8_t)(RENDER_HEIGHT >> 8));
+    write_data((uint8_t)(RENDER_HEIGHT & 0xFF));
 
     write_command(UC8179_CMD_DUAL_SPI);
     write_data(0x00); // disable dual SPI
@@ -293,7 +293,7 @@ void board_render_clear(void) {
 }
 
 void board_render_pixel(uint16_t x, uint16_t y, render_color_t color) {
-    size_t bit_index = y * SCREEN_WIDTH + x;
+    size_t bit_index = y * RENDER_WIDTH + x;
     size_t byte_index = bit_index / 8;
     size_t bit_offset = bit_index % 8;
     assert(byte_index < sizeof(framebuffer[0]));

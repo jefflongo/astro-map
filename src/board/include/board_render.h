@@ -10,8 +10,8 @@ typedef enum {
     RENDER_COLOR_WHITE,
 } render_color_t;
 
-extern uint16_t const SCREEN_WIDTH;
-extern uint16_t const SCREEN_HEIGHT;
+extern uint16_t const RENDER_WIDTH;
+extern uint16_t const RENDER_HEIGHT;
 extern uint32_t const RENDER_FREQ_MS;
 
 bool board_render_init(void);
