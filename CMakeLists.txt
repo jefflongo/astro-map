@@ -22,8 +22,9 @@ add_custom_command(
   DEPENDS ${CMAKE_SOURCE_DIR}/gen_stars.py
   COMMENT "Generating stars...")
 
-add_executable(astro ${CMAKE_SOURCE_DIR}/src/main.c
-                     ${CMAKE_SOURCE_DIR}/src/astro.c ${GENERATED_DIR}/bsc.c)
+add_executable(
+  astro ${CMAKE_SOURCE_DIR}/src/main.c ${CMAKE_SOURCE_DIR}/src/astro.c
+        ${CMAKE_SOURCE_DIR}/src/render.c ${GENERATED_DIR}/bsc.c)
 target_include_directories(astro PRIVATE ${ERFA_INCLUDE_DIRS} ${GENERATED_DIR})
 
 # build ERFA
