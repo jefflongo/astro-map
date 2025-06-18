@@ -209,6 +209,7 @@ static void gps_rx_task(void* args) {
         // wait before listening to the GPS again
         if (time_location_updated) {
             LL_USART_DisableIT_RXNE(USART1);
+            xStreamBufferReset(uart_stream);
             vTaskDelay(pdMS_TO_TICKS(GPS_TASK_FREQ_MS));
             LL_USART_EnableIT_RXNE(USART1);
         }
