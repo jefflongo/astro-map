@@ -5,9 +5,9 @@
 #include <stddef.h>
 #include <stdio.h>
 
-#define HALF_PI 1.57079632679489661923
-#define VMAG_MIN -1.5
-#define VMAG_MAX 12
+#define HALF_PI 1.57079632679489661923f
+#define VMAG_MIN -1.5f
+#define VMAG_MAX 12.0f
 
 void get_stars(
   struct tm const* time,
@@ -81,18 +81,18 @@ void get_stars(
         // filter below horizon
         if (r <= 1) {
             // compute normalized intensity
-            float intensity = pow(10.0, -0.4 * _BSC_VMAG[i]);
-            float intensity_min = pow(10.0, -0.4 * VMAG_MAX);
-            float intensity_max = pow(10.0, -0.4 * VMAG_MIN);
+            float intensity = powf(10, -0.4f * _BSC_VMAG[i]);
+            float intensity_min = powf(10, -0.4f * VMAG_MAX);
+            float intensity_max = powf(10, -0.4f * VMAG_MIN);
             float norm = (intensity - intensity_min) / (intensity_max - intensity_min);
-            norm = fmax(0.0, fmin(norm, 1.0));
+            norm = fmaxf(0, fminf(norm, 1));
 
             // apply an exponential scaling to emphasize "decently bright" stars
-            intensity = pow(norm, 0.25);
+            intensity = powf(norm, 0.25f);
 
             star_t star = {
-                .x = r * sin(azimuth),
-                .y = r * cos(azimuth),
+                .x = r * sinf(azimuth),
+                .y = r * cosf(azimuth),
                 .intensity = intensity,
             };
             on_star(&star);

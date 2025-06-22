@@ -106,7 +106,7 @@ static void display_init(void) {
     write_data(0x3F); // -15V low voltage for black/white pixel
 
     write_command(UC8179_CMD_PANEL_SETTING);
-    write_data(0xBF); // B/W mode, scan up and right, enable booster
+    write_data(0xBB); // B/W mode, scan up and left, enable booster
 
     write_command(UC8179_CMD_PLL_CTRL);
     write_data(0x06); // 50 Hz framerate
@@ -262,7 +262,7 @@ bool board_render_init(void) {
         .ClockPolarity = LL_SPI_POLARITY_LOW,
         .ClockPhase = LL_SPI_PHASE_1EDGE,
         .NSS = LL_SPI_NSS_SOFT,
-        .BaudRate = LL_SPI_BAUDRATEPRESCALER_DIV256, // 6.66MHz max
+        .BaudRate = LL_SPI_BAUDRATEPRESCALER_DIV128, // 6.66MHz max
         .BitOrder = LL_SPI_MSB_FIRST,
         .CRCCalculation = LL_SPI_CRCCALCULATION_DISABLE,
     };
@@ -295,19 +295,20 @@ void board_render_clear(void) {
 void board_render_pixel(uint16_t x, uint16_t y, render_color_t color) {
     size_t bit_index = y * RENDER_WIDTH + x;
     size_t byte_index = bit_index / 8;
-    size_t bit_offset = bit_index % 8;
+    uint8_t bit_offset = 7 - bit_index % 8;
+    uint8_t mask = 1 << bit_offset;
     assert(byte_index < sizeof(framebuffer[0]));
 
     if (color & 0x02) {
-        framebuffer[0][byte_index] |= (1 << bit_offset);
+        framebuffer[0][byte_index] |= mask;
     } else {
-        framebuffer[0][byte_index] &= ~(1 << bit_offset);
+        framebuffer[0][byte_index] &= ~mask;
     }
 
     if (color & 0x01) {
-        framebuffer[1][byte_index] |= (1 << bit_offset);
+        framebuffer[1][byte_index] |= mask;
     } else {
-        framebuffer[1][byte_index] &= ~(1 << bit_offset);
+        framebuffer[1][byte_index] &= ~mask;
     }
 }
 

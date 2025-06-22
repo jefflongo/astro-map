@@ -59,7 +59,23 @@ LIBMATH_FNS = [
     "trunc",
 ]
 
+LIBMATH_CONSTANTS = [
+    "_DIG",
+    "_EPSILON",
+    "_MANT_DIG",
+    "_MAX_10_EXP",
+    "_MAX_EXP",
+    "_MAX",
+    "_MIN_10_EXP",
+    "_MIN_EXP",
+    "_MIN",
+]
+
 LIBMATH_FNS_RE = [(re.compile(rf"\b{fn}\b"), f"{fn}f") for fn in LIBMATH_FNS]
+LIBMATH_CONSTANTS_RE = [
+    (re.compile(rf"\bDBL{constant}\b"), f"FLT{constant}")
+    for constant in LIBMATH_CONSTANTS
+]
 DOUBLE_TYPE_RE = re.compile(r"\bdouble\b")
 DOUBLE_LITERAL_RE = re.compile(
     r"""
@@ -100,6 +116,10 @@ for root, _, files in library_path.walk():
 
             # replace math.h functions with single-precision variants
             for pattern, replace in LIBMATH_FNS_RE:
+                content = pattern.sub(replace, content)
+
+            # replace math.h constants with single-precision variants
+            for pattern, replace in LIBMATH_CONSTANTS_RE:
                 content = pattern.sub(replace, content)
 
             # replace the "double" keyword with "float"

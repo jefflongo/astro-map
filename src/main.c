@@ -25,10 +25,9 @@ static void main_task(void* args) {
         struct tm time;
         float subsecond, latitude, longitude;
         if (board_gps_time_location(&time, &subsecond, &latitude, &longitude)) {
-            // get stars at location / time
+            // draw stars at location / time
             board_render_clear();
             get_stars(&time, subsecond, latitude, longitude, render_star);
-            printf("Updating display\r\n");
             board_render_commit();
         }
 

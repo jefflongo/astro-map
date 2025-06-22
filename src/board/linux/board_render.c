@@ -71,7 +71,7 @@ void board_render_pixel(uint16_t x, uint16_t y, render_color_t color) {
         draw_color |= 0xAA;
     }
     SDL_SetRenderDrawColor(renderer, draw_color, draw_color, draw_color, 255);
-    SDL_RenderDrawPoint(renderer, x, y);
+    SDL_RenderDrawPoint(renderer, x, (RENDER_HEIGHT - 1) - y);
 }
 
 void board_render_commit(void) {

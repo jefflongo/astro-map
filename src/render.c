@@ -23,7 +23,7 @@ void render_star(star_t const* star) {
 
     // convert normalized coords to screen coords
     uint16_t screen_x = (uint16_t)(((RENDER_WIDTH - 1) + star->x * screen_scale) / 2);
-    uint16_t screen_y = (uint16_t)(((RENDER_HEIGHT - 1) - star->y * screen_scale) / 2);
+    uint16_t screen_y = (uint16_t)(((RENDER_HEIGHT - 1) + star->y * screen_scale) / 2);
 
     // compute reference resolution to renderer resolution scaling factor
     float scale = (RENDER_WIDTH < RENDER_HEIGHT ? RENDER_WIDTH : RENDER_HEIGHT) / 640.0f;

@@ -6,7 +6,7 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
-add_compile_options(-Wall -Wextra -Wpedantic -Werror)
+add_compile_options(-Wall -Wextra -Wpedantic -Werror -Wdouble-promotion)
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
@@ -60,7 +60,8 @@ add_custom_command(
 add_library(bsc STATIC ${BSC_DIR}/bsc.c)
 target_include_directories(bsc PUBLIC ${BSC_DIR})
 
-list(FILTER ERFA_SOURCES EXCLUDE REGEX ".*(erfaversion|t_erfa_c_extra)\\.c$")
+list(FILTER ERFA_SOURCES EXCLUDE REGEX
+     ".*(erfaversion|t_erfa_c|t_erfa_c_extra)\\.c$")
 add_library(erfa STATIC ${ERFA_SOURCES})
 target_include_directories(erfa PUBLIC ${ERFA_DIR}/src)
 target_link_libraries(erfa PRIVATE m)
