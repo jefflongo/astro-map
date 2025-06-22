@@ -1,6 +1,7 @@
 #include <FreeRTOS.h>
 #include <errno.h>
 #include <stddef.h>
+#include <stm32g4xx.h>
 
 void* _sbrk(ptrdiff_t incr) {
     errno = ENOMEM;
@@ -29,6 +30,7 @@ int _lseek(int fd, int offset, int whence) {
 
 void _exit(int status) {
     portDISABLE_INTERRUPTS();
+    __BKPT();
     while (1)
         ;
 }

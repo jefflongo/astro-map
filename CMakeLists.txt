@@ -10,8 +10,13 @@ add_compile_options(-Wall -Wextra -Wpedantic -Werror -Wdouble-promotion)
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
-option(VMAG_MAX "Maximum star magnitude to render" 6.0)
-set(ERFA_SINGLE_PRECISION ON) # double precision not currently supported
+set(VMAG_MAX
+    6.0
+    CACHE STRING "Maximum star magnitude to render")
+option(ERFA_SINGLE_PRECISION "Use single precision ERFA library" ON)
+if(NOT ERFA_SINGLE_PRECISION)
+  message(FATAL_ERROR "ERFA double precision is not currently supported")
+endif()
 
 set(GENERATED_DIR ${CMAKE_BINARY_DIR}/generated)
 file(MAKE_DIRECTORY ${GENERATED_DIR})

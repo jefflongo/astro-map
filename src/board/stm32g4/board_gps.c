@@ -11,6 +11,7 @@
 
 // clang-format off
 #include <FreeRTOS.h>
+#include <event_groups.h>
 #include <semphr.h>
 #include <stream_buffer.h>
 #include <task.h>
@@ -38,7 +39,8 @@ static_assert((RTC_PREDIV_S + 1) * (RTC_PREDIV_A + 1) == 32768);
 
 #define DEG_TO_RAD(x) ((x) * 3.14159265358979323846f / 180.0f)
 
-static StreamBufferHandle_t uart_stream;
+static StreamBufferHandle_t uart_stream = NULL;
+static EventGroupHandle_t gps_events = NULL;
 static SemaphoreHandle_t gps_mutex = NULL;
 
 static float gps_latitude = 0;
@@ -205,6 +207,7 @@ static void gps_rx_task(void* args) {
 
                     if (!backup_regs_valid) {
                         LL_RTC_BKP_SetRegister(RTC, LL_RTC_BKP_DR0, RTC_VALID_MAGIC);
+                        xEventGroupSetBits(gps_events, 1);
                         backup_regs_valid = true;
                     }
                 }
@@ -262,6 +265,8 @@ static void rtc_init(void) {
 
         uint32_t longitude_bits = LL_RTC_BKP_GetRegister(RTC, LL_RTC_BKP_DR2);
         memcpy(&gps_longitude, &longitude_bits, sizeof(float));
+
+        xEventGroupSetBits(gps_events, 1);
     }
 }
 
@@ -379,14 +384,17 @@ static bool gps_configure(void) {
 }
 
 bool board_gps_init(void) {
+    // allocate task resources
+    uart_stream = xStreamBufferCreate(256, 1);
+    gps_events = xEventGroupCreate();
+    gps_mutex = xSemaphoreCreateMutex();
+
     // initialize interfaces
     rtc_init();
     uart_init();
     bool ret = gps_configure();
 
-    // set up processing task
-    uart_stream = xStreamBufferCreate(256, 1);
-    gps_mutex = xSemaphoreCreateMutex();
+    // launch processing task
     xTaskCreate(gps_rx_task, "gps_rx", 256, NULL, 2, NULL);
 
     // kick off UART RX
@@ -400,6 +408,9 @@ bool board_gps_init(void) {
 void board_gps_deinit(void) {}
 
 bool board_gps_time_location(struct tm* time, float* subsecond, float* latitude, float* longitude) {
+    // block until GPS valid
+    xEventGroupWaitBits(gps_events, 1, pdFALSE, pdTRUE, portMAX_DELAY);
+
     xSemaphoreTake(gps_mutex, portMAX_DELAY);
 
     // perform a coherent read of the RTC registers, carefully handling cases where a read is

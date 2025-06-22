@@ -2,8 +2,8 @@
 
 #include <SDL2/SDL.h>
 
-uint16_t const RENDER_WIDTH = 640;
-uint16_t const RENDER_HEIGHT = 640;
+uint16_t const RENDER_WIDTH = 648;
+uint16_t const RENDER_HEIGHT = 480;
 uint32_t const RENDER_FREQ_MS = 16;
 
 static SDL_Renderer* renderer = NULL;
