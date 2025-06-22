@@ -8,6 +8,7 @@
 // clang-format on
 
 #include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 static void main_task(void* args) {
@@ -22,11 +23,12 @@ static void main_task(void* args) {
     while (run) {
         // get time/location
         struct tm time;
-        double subsecond, latitude, longitude;
+        float subsecond, latitude, longitude;
         if (board_gps_time_location(&time, &subsecond, &latitude, &longitude)) {
             // get stars at location / time
             board_render_clear();
             get_stars(&time, subsecond, latitude, longitude, render_star);
+            printf("Updating display\r\n");
             board_render_commit();
         }
 
@@ -46,7 +48,7 @@ int main(int argc, char* argv[]) {
     (void)argv;
 
     assert(board_init());
-    xTaskCreate(main_task, "main", 256, NULL, 1, NULL);
+    xTaskCreate(main_task, "main", 512, NULL, 1, NULL);
     vTaskStartScheduler();
 
     // unreachable

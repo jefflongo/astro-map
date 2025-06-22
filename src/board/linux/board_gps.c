@@ -4,14 +4,14 @@
 #include <stdint.h>
 #include <string.h>
 
-#define DEG_TO_RAD(x) ((x) * 3.14159265358979323846 / 180.0)
+#define DEG_TO_RAD(x) ((x) * 3.14159265358979323846f / 180.0f)
 
 static CURL* curl = NULL;
 static char curl_buffer[32];
 static size_t curl_pos = 0;
 
-static double gps_latitude = 0;
-static double gps_longitude = 0;
+static float gps_latitude = 0;
+static float gps_longitude = 0;
 
 size_t write_callback(void* ptr, size_t size, size_t nmemb, void* userdata) {
     (void)userdata;
@@ -44,23 +44,22 @@ void board_gps_deinit(void) {
     curl_global_cleanup();
 }
 
-bool board_gps_time_location(
-  struct tm* time, double* subsecond, double* latitude, double* longitude) {
+bool board_gps_time_location(struct tm* time, float* subsecond, float* latitude, float* longitude) {
     struct timespec ts;
     timespec_get(&ts, TIME_UTC);
     struct tm* now = gmtime(&ts.tv_sec);
 
     *time = *now;
-    *subsecond = ts.tv_nsec / 1e9;
+    *subsecond = ts.tv_nsec / 1e9f;
 
     CURLcode res = curl_easy_perform(curl);
     if (res != CURLE_OK) {
-        fprintf(stderr, "ERROR: curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+        fprintf(stderr, "ERROR: curl_easy_perform() failed: %s\r\n", curl_easy_strerror(res));
         return false;
     }
 
-    if (sscanf(curl_buffer, "%lf,%lf", &gps_latitude, &gps_longitude) != 2) {
-        fprintf(stderr, "ERROR: failed to parse location: \"%s\"\n", curl_buffer);
+    if (sscanf(curl_buffer, "%f,%f", &gps_latitude, &gps_longitude) != 2) {
+        fprintf(stderr, "ERROR: failed to parse location: \"%s\"\r\n", curl_buffer);
         return false;
     }
 

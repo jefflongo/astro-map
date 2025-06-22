@@ -11,7 +11,7 @@ static SDL_Window* window = NULL;
 
 bool board_render_init(void) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        fprintf(stderr, "ERROR: SDL failed to initialize: %s\n", SDL_GetError());
+        fprintf(stderr, "ERROR: SDL failed to initialize: %s\r\n", SDL_GetError());
         return false;
     }
 
@@ -24,13 +24,13 @@ bool board_render_init(void) {
       SDL_WINDOW_SHOWN);
 
     if (window == NULL) {
-        fprintf(stderr, "ERROR: SDL failed to create window: %s\n", SDL_GetError());
+        fprintf(stderr, "ERROR: SDL failed to create window: %s\r\n", SDL_GetError());
         return false;
     }
 
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (renderer == NULL) {
-        fprintf(stderr, "ERROR: SDL failed to create renderer: %s\n", SDL_GetError());
+        fprintf(stderr, "ERROR: SDL failed to create renderer: %s\r\n", SDL_GetError());
         return false;
     }
 

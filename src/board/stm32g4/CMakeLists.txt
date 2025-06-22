@@ -13,6 +13,7 @@ add_library(
 target_include_directories(board_stm32g4
                            PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include)
 target_include_directories(board_stm32g4 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(board_stm32g4 PUBLIC PLATFORM_USES_LSE=1)
 
 # configure STM32Cube
 generate_stm32cube(

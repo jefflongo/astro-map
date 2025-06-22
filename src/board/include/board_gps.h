@@ -6,5 +6,4 @@
 bool board_gps_init(void);
 void board_gps_deinit();
 
-bool board_gps_time_location(
-  struct tm* time, double* subsecond, double* latitude, double* longitude);
+bool board_gps_time_location(struct tm* time, float* subsecond, float* latitude, float* longitude);

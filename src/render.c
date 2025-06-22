@@ -6,17 +6,17 @@
 
 void render_star(star_t const* star) {
 #ifndef NO_CROP
-    double const aspect_ratio = (double)RENDER_WIDTH / RENDER_HEIGHT;
-    double const b = 1.0 / sqrt(aspect_ratio * aspect_ratio + 1.0);
-    double const a = aspect_ratio * b;
-    double const screen_scale = fmin((RENDER_WIDTH - 1) / a, (RENDER_HEIGHT - 1) / b);
+    float const aspect_ratio = (float)RENDER_WIDTH / RENDER_HEIGHT;
+    float const b = 1.0f / sqrtf(aspect_ratio * aspect_ratio + 1.0f);
+    float const a = aspect_ratio * b;
+    float const screen_scale = fminf((RENDER_WIDTH - 1) / a, (RENDER_HEIGHT - 1) / b);
 #else  // NO_CROP
-    double const screen_scale = fmin(SCREEN_WIDTH - 1, RENDER_HEIGHT - 1);
+    float const screen_scale = fminf(RENDER_WIDTH - 1, RENDER_HEIGHT - 1);
 #endif // NO_CROP
 
 #ifndef NO_CROP
     // skip stars outside the inscribed rectangle
-    if (fabs(star->x) > a || fabs(star->y) > b) {
+    if (fabsf(star->x) > a || fabsf(star->y) > b) {
         return;
     }
 #endif // NO_CROP
@@ -26,13 +26,13 @@ void render_star(star_t const* star) {
     uint16_t screen_y = (uint16_t)(((RENDER_HEIGHT - 1) - star->y * screen_scale) / 2);
 
     // compute reference resolution to renderer resolution scaling factor
-    double scale = (RENDER_WIDTH < RENDER_HEIGHT ? RENDER_WIDTH : RENDER_HEIGHT) / 640.0;
+    float scale = (RENDER_WIDTH < RENDER_HEIGHT ? RENDER_WIDTH : RENDER_HEIGHT) / 640.0f;
 
     // determine color
     render_color_t color = RENDER_COLOR_WHITE;
-    if (star->intensity < 0.33) {
+    if (star->intensity < 0.33f) {
         color = RENDER_COLOR_DARK_GRAY;
-    } else if (star->intensity < 0.66) {
+    } else if (star->intensity < 0.66f) {
         color = RENDER_COLOR_LIGHT_GRAY;
     }
 

@@ -4,6 +4,7 @@
 
 #include <stm32g4xx_ll_bus.h>
 #include <stm32g4xx_ll_gpio.h>
+#include <stm32g4xx_ll_pwr.h>
 #include <stm32g4xx_ll_rcc.h>
 #include <stm32g4xx_ll_rtc.h>
 #include <stm32g4xx_ll_usart.h>
@@ -29,13 +30,19 @@
 #define RTC_PREDIV_A 127
 static_assert((RTC_PREDIV_S + 1) * (RTC_PREDIV_A + 1) == 32768);
 
-#define DEG_TO_RAD(x) ((x) * 3.14159265358979323846 / 180.0)
+#if PLATFORM_USES_LSE
+#define RTC_CLKSOURCE LL_RCC_RTC_CLKSOURCE_LSE
+#else // PLATFORM_USES_LSE
+#define RTC_CLKSOURCE LL_RCC_RTC_CLKSOURCE_LSI
+#endif // PLATFORM_USES_LSE
+
+#define DEG_TO_RAD(x) ((x) * 3.14159265358979323846f / 180.0f)
 
 static StreamBufferHandle_t uart_stream;
 static SemaphoreHandle_t gps_mutex = NULL;
 
-static double gps_latitude = 0;
-static double gps_longitude = 0;
+static float gps_latitude = 0;
+static float gps_longitude = 0;
 
 static void gps_rx_task(void* args) {
     (void)args;
@@ -144,10 +151,17 @@ static void gps_rx_task(void* args) {
                     uint8_t second = message[state + 10];
                     uint8_t month = message[state + 6];
                     uint8_t day = message[state + 7];
-                    uint8_t year = *(uint16_t*)(&message[state + 4]) - 2000;
 
-                    double latitude = DEG_TO_RAD(*(int32_t*)(&message[state + 28]) * 1e-7);
-                    double longitude = DEG_TO_RAD(*(int32_t*)(&message[state + 24]) * 1e-7);
+                    uint16_t year_p2000;
+                    memcpy(&year_p2000, &message[state + 4], sizeof(year_p2000));
+                    uint8_t year = year_p2000 - 2000;
+
+                    int32_t latitude_int, longitude_int;
+                    memcpy(&latitude_int, &message[state + 28], sizeof(latitude_int));
+                    memcpy(&longitude_int, &message[state + 24], sizeof(longitude_int));
+
+                    float latitude = DEG_TO_RAD(latitude_int * 1e-7f);
+                    float longitude = DEG_TO_RAD(longitude_int * 1e-7f);
 
                     xSemaphoreTake(gps_mutex, portMAX_DELAY);
 
@@ -181,19 +195,13 @@ static void gps_rx_task(void* args) {
                     xSemaphoreGive(gps_mutex);
 
                     // store location into backup registers
-                    uint64_t latitude_bits;
-                    memcpy(&latitude_bits, &gps_latitude, sizeof(double));
-                    uint32_t latitude_low = (uint32_t)(latitude_bits & 0xFFFFFFFF);
-                    uint32_t latitude_high = (uint32_t)(latitude_bits >> 32);
-                    LL_RTC_BKP_SetRegister(RTC, LL_RTC_BKP_DR1, latitude_low);
-                    LL_RTC_BKP_SetRegister(RTC, LL_RTC_BKP_DR2, latitude_high);
+                    uint32_t latitude_bits;
+                    memcpy(&latitude_bits, &gps_latitude, sizeof(float));
+                    LL_RTC_BKP_SetRegister(RTC, LL_RTC_BKP_DR1, latitude_bits);
 
-                    uint64_t longitude_bits;
-                    memcpy(&longitude_bits, &gps_longitude, sizeof(double));
-                    uint32_t longitude_low = (uint32_t)(longitude_bits & 0xFFFFFFFF);
-                    uint32_t longitude_high = (uint32_t)(longitude_bits >> 32);
-                    LL_RTC_BKP_SetRegister(RTC, LL_RTC_BKP_DR3, longitude_low);
-                    LL_RTC_BKP_SetRegister(RTC, LL_RTC_BKP_DR4, longitude_high);
+                    uint32_t longitude_bits;
+                    memcpy(&longitude_bits, &gps_longitude, sizeof(float));
+                    LL_RTC_BKP_SetRegister(RTC, LL_RTC_BKP_DR2, longitude_bits);
 
                     if (!backup_regs_valid) {
                         LL_RTC_BKP_SetRegister(RTC, LL_RTC_BKP_DR0, RTC_VALID_MAGIC);
@@ -221,17 +229,20 @@ void USART1_IRQHandler(void) {
         char data = LL_USART_ReceiveData8(USART1);
         xStreamBufferSendFromISR(uart_stream, &data, 1, pdFALSE);
     }
+    LL_USART_ClearFlag_ORE(USART1);
 
     portYIELD_FROM_ISR(pdFALSE);
 }
 
 static void rtc_init(void) {
-    // TODO: need to use LSE for VBAT backup to work.
-    // clock source cannot be changed without resetting RTC.
-    if (LL_RCC_GetRTCClockSource() != LL_RCC_RTC_CLKSOURCE_LSI) {
+    LL_PWR_EnableBkUpAccess();
+    while (!LL_PWR_IsEnabledBkUpAccess())
+        ;
+
+    if (LL_RCC_GetRTCClockSource() != RTC_CLKSOURCE) {
         LL_RCC_ForceBackupDomainReset();
         LL_RCC_ReleaseBackupDomainReset();
-        LL_RCC_SetRTCClockSource(LL_RCC_RTC_CLKSOURCE_LSI);
+        LL_RCC_SetRTCClockSource(RTC_CLKSOURCE);
     }
     LL_RCC_EnableRTC();
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_RTCAPB);
@@ -246,15 +257,11 @@ static void rtc_init(void) {
 
     if (LL_RTC_BKP_GetRegister(RTC, LL_RTC_BKP_DR0) == RTC_VALID_MAGIC) {
         // load location from backup
-        uint32_t latitude_low = LL_RTC_BKP_GetRegister(RTC, LL_RTC_BKP_DR1);
-        uint32_t latitude_high = LL_RTC_BKP_GetRegister(RTC, LL_RTC_BKP_DR2);
-        uint64_t latitude_bits = ((uint64_t)latitude_high << 32) | latitude_low;
-        memcpy(&gps_latitude, &latitude_bits, sizeof(double));
+        uint32_t latitude_bits = LL_RTC_BKP_GetRegister(RTC, LL_RTC_BKP_DR1);
+        memcpy(&gps_latitude, &latitude_bits, sizeof(float));
 
-        uint32_t longitude_low = LL_RTC_BKP_GetRegister(RTC, LL_RTC_BKP_DR3);
-        uint32_t longitude_high = LL_RTC_BKP_GetRegister(RTC, LL_RTC_BKP_DR4);
-        uint64_t longitude_bits = ((uint64_t)longitude_high << 32) | longitude_low;
-        memcpy(&gps_longitude, &longitude_bits, sizeof(double));
+        uint32_t longitude_bits = LL_RTC_BKP_GetRegister(RTC, LL_RTC_BKP_DR2);
+        memcpy(&gps_longitude, &longitude_bits, sizeof(float));
     }
 }
 
@@ -319,30 +326,33 @@ static bool set_configuration_items(void const* configuration_data, uint16_t len
         LL_USART_TransmitData8(USART1, message[i]);
     }
 
-    // receive a UBX-ACK-ACK/NACK response
-    uint8_t response[10];
-    for (uint8_t i = 0; i < 10; i++) {
-        while (!LL_USART_IsActiveFlag_RXNE(USART1))
-            ;
-        response[i] = LL_USART_ReceiveData8(USART1);
-    }
-    // response checksum (skip header)
-    uint8_t ck_a = 0, ck_b = 0;
-    for (uint16_t i = 2; i < 10 - 2; i++) {
-        ck_a += response[i];
-        ck_b += ck_a;
-    }
+    return true;
 
-    // check for valid UBX-ACK-ACK
-    bool valid = response[0] == 0xb5 && response[1] == 0x62;     // check header
-    valid = valid && response[2] == 0x05;                        // check class
-    valid = valid && response[3] == 0x01;                        // check id
-    valid = valid && response[4] == 2 && response[5] == 0;       // check length
-    valid = valid && response[6] == 0x06;                        // check acked class
-    valid = valid && response[7] == 0x8a;                        // check acked id
-    valid = valid && response[8] == ck_a && response[9] == ck_b; // check checksum
+    // TODO: figure out why this isn't reliable
+    // // receive a UBX-ACK-ACK/NACK response
+    // uint8_t response[10];
+    // for (uint8_t i = 0; i < 10; i++) {
+    //     while (!LL_USART_IsActiveFlag_RXNE(USART1))
+    //         ;
+    //     response[i] = LL_USART_ReceiveData8(USART1);
+    // }
+    // // response checksum (skip header)
+    // uint8_t ck_a = 0, ck_b = 0;
+    // for (uint16_t i = 2; i < 10 - 2; i++) {
+    //     ck_a += response[i];
+    //     ck_b += ck_a;
+    // }
 
-    return valid;
+    // // check for valid UBX-ACK-ACK
+    // bool valid = response[0] == 0xb5 && response[1] == 0x62;     // check header
+    // valid = valid && response[2] == 0x05;                        // check class
+    // valid = valid && response[3] == 0x01;                        // check id
+    // valid = valid && response[4] == 2 && response[5] == 0;       // check length
+    // valid = valid && response[6] == 0x06;                        // check acked class
+    // valid = valid && response[7] == 0x8a;                        // check acked id
+    // valid = valid && response[8] == ck_a && response[9] == ck_b; // check checksum
+
+    // return valid;
 }
 
 static bool gps_configure(void) {
@@ -377,7 +387,7 @@ bool board_gps_init(void) {
     // set up processing task
     uart_stream = xStreamBufferCreate(256, 1);
     gps_mutex = xSemaphoreCreateMutex();
-    xTaskCreate(gps_rx_task, "gps_rx", 256, NULL, 1, NULL);
+    xTaskCreate(gps_rx_task, "gps_rx", 256, NULL, 2, NULL);
 
     // kick off UART RX
     LL_USART_EnableIT_RXNE(USART1);
@@ -389,8 +399,7 @@ bool board_gps_init(void) {
 
 void board_gps_deinit(void) {}
 
-bool board_gps_time_location(
-  struct tm* time, double* subsecond, double* latitude, double* longitude) {
+bool board_gps_time_location(struct tm* time, float* subsecond, float* latitude, float* longitude) {
     xSemaphoreTake(gps_mutex, portMAX_DELAY);
 
     // perform a coherent read of the RTC registers, carefully handling cases where a read is

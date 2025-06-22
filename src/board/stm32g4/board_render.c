@@ -127,7 +127,7 @@ static void display_init(void) {
     write_data(0x12); // VCOM -1V
 
     write_command(UC8179_CMD_VCOM_DATA_INT_SETTING);
-    write_data(0x20); // configure data polarity (0 -> black, 1 -> white)
+    write_data(0x21); // configure data polarity (0 -> black, 1 -> white)
     write_data(0x07); // use default VCOM/data interval
 
     uint8_t const lut_vcom[] = {
@@ -298,13 +298,13 @@ void board_render_pixel(uint16_t x, uint16_t y, render_color_t color) {
     size_t bit_offset = bit_index % 8;
     assert(byte_index < sizeof(framebuffer[0]));
 
-    if (color & 0x01) {
+    if (color & 0x02) {
         framebuffer[0][byte_index] |= (1 << bit_offset);
     } else {
         framebuffer[0][byte_index] &= ~(1 << bit_offset);
     }
 
-    if (color & 0x02) {
+    if (color & 0x01) {
         framebuffer[1][byte_index] |= (1 << bit_offset);
     } else {
         framebuffer[1][byte_index] &= ~(1 << bit_offset);

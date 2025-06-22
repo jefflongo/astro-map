@@ -22,18 +22,28 @@
 #define NVIC_PRIORITYGROUP_4 ((uint32_t)0x00000003)
 #endif
 
-#define HANDLER(thing, action)                                                                     \
-    void thing##_Handler(void);                                                                    \
-    void thing##_Handler(void) {                                                                   \
-        action;                                                                                    \
-    }
+void HardFault_Handler(void) {
+    __disable_irq();
+    __BKPT();
+    while (1)
+        ;
+}
 
-HANDLER(HardFault, while (1))
-HANDLER(MemManage, while (1))
-HANDLER(BusFault, while (1))
-HANDLER(UsageFault, while (1))
+void UsageFault_Handler(void) {
+    __disable_irq();
+    __BKPT();
+    while (1)
+        ;
+}
 
-HANDLER(DebugMon, )
+void BusFault_Handler(void) {
+    __disable_irq();
+    __BKPT();
+    while (1)
+        ;
+}
+
+void DebugMon_Handler(void) {}
 
 void platform_init(void) {
     // enable system and power control clocks
@@ -62,7 +72,7 @@ void platform_init(void) {
     // set clock source and set PLLCLK to 170MHz
 #if PLATFORM_USES_EXTERNAL_CLOCK
     LL_RCC_HSE_Enable();
-    while (LL_RCC_HSE_IsReady() != 1)
+    while (!LL_RCC_HSE_IsReady())
         ;
 #if !PLATFORM_EXTERNAL_CLOCK_FREQUENCY
 #error PLATFORM_EXTERNAL_CLOCK_FREQUENCY must be defined if using external clock
@@ -85,20 +95,32 @@ void platform_init(void) {
 #endif // PLATFORM_EXTERNAL_CLOCK_FREQUENCY
 #else  // PLATFORM_USES_EXTERNAL_CLOCK
     LL_RCC_HSI_Enable();
-    while (LL_RCC_HSI_IsReady() != 1)
+    while (!LL_RCC_HSI_IsReady())
         ;
     LL_RCC_PLL_ConfigDomain_SYS(LL_RCC_PLLSOURCE_HSI, LL_RCC_PLLM_DIV_4, 85, LL_RCC_PLLR_DIV_2);
 #endif // PLATFORM_USES_EXTERNAL_CLOCK
 
+#if PLATFORM_USES_LSE
+    // enable LSE
+    LL_PWR_EnableBkUpAccess();
+    while (!LL_PWR_IsEnabledBkUpAccess())
+        ;
+
+    // LL_RCC_LSE_EnableBypass(); // TODO: using oscillator instead of crystal
+    LL_RCC_LSE_Enable();
+    while (!LL_RCC_LSE_IsReady())
+        ;
+#else  // PLATFORM_USES_LSE
     // enable LSI
     LL_RCC_LSI_Enable();
-    while (LL_RCC_LSI_IsReady() != 1)
+    while (!LL_RCC_LSI_IsReady())
         ;
+#endif // PLATFORM_USES_LSE
 
     // enable PLLCLK
     LL_RCC_PLL_EnableDomain_SYS();
     LL_RCC_PLL_Enable();
-    while (LL_RCC_PLL_IsReady() != 1)
+    while (!LL_RCC_PLL_IsReady())
         ;
 
     // set SYSCLK to PLLCLK (170MHz)
