@@ -10,47 +10,51 @@ add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
+option(VMAG_MAX "Maximum star magnitude to render" 6.0)
+set(ERFA_SINGLE_PRECISION ON) # double precision not currently supported
+
 set(GENERATED_DIR ${CMAKE_BINARY_DIR}/generated)
 file(MAKE_DIRECTORY ${GENERATED_DIR})
 
-# build ERFA (currently always using single precision)
-set(ERFA_SINGLE_PRECISION ON)
+# build ERFA
 set(ERFA_DIR ${CMAKE_SOURCE_DIR}/ext/erfa)
 file(GLOB ERFA_SOURCES ${ERFA_DIR}/src/*.c)
 
 if(ERFA_SINGLE_PRECISION)
   # patch library for single precision
+  set(PATCH_SCRIPT ${CMAKE_SOURCE_DIR}/scripts/double_to_float.py)
   set(NEW_ERFA_DIR ${GENERATED_DIR}/erfa)
   list(TRANSFORM ERFA_SOURCES REPLACE "^${ERFA_DIR}" "${NEW_ERFA_DIR}")
 
   add_custom_command(
     OUTPUT ${ERFA_SOURCES}
-    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/double_to_float.py
-            ${ERFA_DIR}
+    COMMAND ${Python3_EXECUTABLE} ${PATCH_SCRIPT} ${ERFA_DIR}
     WORKING_DIRECTORY ${GENERATED_DIR}
-    DEPENDS ${CMAKE_SOURCE_DIR}/scripts/double_to_float.py ${ERFA_DIR}/src
-    COMMENT "Generating single precision ERFA..."
+    DEPENDS ${PATCH_SCRIPT} ${ERFA_DIR}/src
+    COMMENT "Generating single precision ERFA library..."
     VERBATIM)
 
   set(ERFA_DIR ${NEW_ERFA_DIR})
 endif()
 
 # build BSC
+set(GEN_STARS_SCRIPT ${CMAKE_SOURCE_DIR}/scripts/gen_stars.py)
 set(BSC_DIR ${GENERATED_DIR}/bsc)
+set(BSC_OPTIONS_FILE ${GENERATED_DIR}/bsc_options.txt)
 file(MAKE_DIRECTORY ${BSC_DIR})
 
 set(BSC_OPTIONS ${VMAG_MAX})
 if(ERFA_SINGLE_PRECISION)
   list(APPEND BSC_OPTIONS "--single-precision")
 endif()
+file(WRITE ${BSC_OPTIONS_FILE} "${BSC_OPTIONS}")
 
 add_custom_command(
   OUTPUT ${BSC_DIR}/bsc.h ${BSC_DIR}/bsc.c
-  COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/gen_stars.py
-          ${BSC_OPTIONS}
+  COMMAND ${Python3_EXECUTABLE} ${GEN_STARS_SCRIPT} ${BSC_OPTIONS}
   WORKING_DIRECTORY ${BSC_DIR}
-  DEPENDS ${CMAKE_SOURCE_DIR}/scripts/gen_stars.py
-  COMMENT "Generating stars..."
+  DEPENDS ${GEN_STARS_SCRIPT} ${BSC_OPTIONS_FILE}
+  COMMENT "Generating stars (Vmag < ${VMAG_MAX})..."
   VERBATIM)
 
 add_library(bsc STATIC ${BSC_DIR}/bsc.c)

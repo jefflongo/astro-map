@@ -6,10 +6,13 @@ from astropy.coordinates import Angle
 from astroquery.vizier import Vizier
 
 parser = argparse.ArgumentParser()
+parser.add_argument("vmag", type=float, help="Maximum visual magnitude to output")
 parser.add_argument(
-    nargs="?", type=float, help="Maximum visual magnitude", dest="vmag", default=6.0
+    "--single-precision",
+    action="store_true",
+    dest="sp",
+    help="Output single precision floats",
 )
-parser.add_argument("--single-precision", action="store_true", dest="sp")
 args = parser.parse_args()
 
 TYPE_STRING = "float" if args.sp else "double"
