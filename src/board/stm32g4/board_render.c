@@ -106,7 +106,7 @@ static void display_init(void) {
     write_data(0x3F); // -15V low voltage for black/white pixel
 
     write_command(UC8179_CMD_PANEL_SETTING);
-    write_data(0xBB); // B/W mode, scan up and left, enable booster
+    write_data(0xB7); // B/W mode, scan down and right, enable booster
 
     write_command(UC8179_CMD_PLL_CTRL);
     write_data(0x06); // 50 Hz framerate
