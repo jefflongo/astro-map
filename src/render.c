@@ -28,16 +28,19 @@ void render_star(star_t const* star) {
     // compute reference resolution to renderer resolution scaling factor
     float scale = (RENDER_WIDTH < RENDER_HEIGHT ? RENDER_WIDTH : RENDER_HEIGHT) / 640.0f;
 
+    // apply an exponential scaling to emphasize "decently bright" stars
+    float intensity = powf(star->intensity, 0.22f);
+
     // determine color
     render_color_t color = RENDER_COLOR_WHITE;
-    if (star->intensity < 0.33f) {
+    if (intensity < 0.3f) {
         color = RENDER_COLOR_DARK_GRAY;
-    } else if (star->intensity < 0.66f) {
+    } else if (intensity < 0.4f) {
         color = RENDER_COLOR_LIGHT_GRAY;
     }
 
     // draw circle
-    int8_t radius = 1 + (int8_t)(scale * (star->intensity * 3.5f));
+    int8_t radius = 1 + (int8_t)(scale * 9.5f * (intensity * intensity));
     int8_t x = 0;
     int8_t y = radius;
     int8_t d = 1 - radius;

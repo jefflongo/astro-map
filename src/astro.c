@@ -84,16 +84,13 @@ void get_stars(
             float intensity = powf(10, -0.4f * _BSC_VMAG[i]);
             float intensity_min = powf(10, -0.4f * VMAG_MAX);
             float intensity_max = powf(10, -0.4f * VMAG_MIN);
-            float norm = (intensity - intensity_min) / (intensity_max - intensity_min);
-            norm = fmaxf(0, fminf(norm, 1));
-
-            // apply an exponential scaling to emphasize "decently bright" stars
-            intensity = powf(norm, 0.25f);
+            float intensity_normed = (intensity - intensity_min) / (intensity_max - intensity_min);
+            intensity_normed = fmaxf(0, fminf(intensity_normed, 1));
 
             star_t star = {
                 .x = r * sinf(azimuth),
                 .y = r * cosf(azimuth),
-                .intensity = intensity,
+                .intensity = intensity_normed,
             };
             on_star(&star);
         }
