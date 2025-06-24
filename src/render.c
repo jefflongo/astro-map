@@ -40,7 +40,7 @@ void render_star(star_t const* star) {
     }
 
     // draw circle
-    int8_t radius = 1 + (int8_t)(scale * 9.5f * (intensity * intensity));
+    int8_t radius = 1 + (int8_t)(scale * fminf(9.5f * (intensity * intensity), 8));
     int8_t x = 0;
     int8_t y = radius;
     int8_t d = 1 - radius;

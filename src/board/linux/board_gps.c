@@ -63,6 +63,11 @@ static void gps_rx_task(void* args) {
             gps_latitude = DEG_TO_RAD(latitude);
             gps_longitude = DEG_TO_RAD(longitude);
             xSemaphoreGive(gps_mutex);
+
+            printf(
+              "GPS updated: latitude=%0.2f, longitude=%0.2f\r\n",
+              (double)gps_latitude,
+              (double)gps_longitude);
         }
 
         vTaskDelay(pdMS_TO_TICKS(GPS_TASK_FREQ_MS));

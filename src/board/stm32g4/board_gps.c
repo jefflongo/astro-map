@@ -210,6 +210,35 @@ static void gps_rx_task(void* args) {
                         xEventGroupSetBits(gps_events, 1);
                         backup_regs_valid = true;
                     }
+
+                    if (time_location_updated) {
+                        int32_t latitude_whole = (int32_t)latitude;
+                        int32_t latitude_frac = (int32_t)((latitude - latitude_whole) * 100);
+                        if (latitude_frac < 0) {
+                            latitude_frac = -latitude_frac;
+                        }
+
+                        int32_t longitude_whole = (int32_t)longitude;
+                        int32_t longitude_frac = (int32_t)((longitude - longitude_whole) * 100);
+                        if (longitude_frac < 0) {
+                            longitude_frac = -longitude_frac;
+                        }
+
+                        printf(
+                          "GPS updated: latitude=%ld.%02ld, longitude=%ld.%02ld, "
+                          "date=%02u/%02u/%04u "
+                          "%02u:%02u:%02u\r\n",
+                          latitude_whole,
+                          latitude_frac,
+                          longitude_whole,
+                          longitude_frac,
+                          month,
+                          day,
+                          year_p2000,
+                          hour,
+                          minute,
+                          second);
+                    }
                 }
 
                 state = HEADER1;
@@ -267,6 +296,39 @@ static void rtc_init(void) {
         memcpy(&gps_longitude, &longitude_bits, sizeof(float));
 
         xEventGroupSetBits(gps_events, 1);
+
+        struct tm time;
+        float subsecond, latitude, longitude;
+        board_gps_time_location(&time, &subsecond, &latitude, &longitude);
+
+        int32_t latitude_whole = (int32_t)latitude;
+        int32_t latitude_frac = (int32_t)((latitude - latitude_whole) * 100);
+        if (latitude_frac < 0) {
+            latitude_frac = -latitude_frac;
+        }
+
+        int32_t longitude_whole = (int32_t)longitude;
+        int32_t longitude_frac = (int32_t)((longitude - longitude_whole) * 100);
+        if (longitude_frac < 0) {
+            longitude_frac = -longitude_frac;
+        }
+
+        printf(
+          "RTC backup valid: latitude=%ld.%02ld, longitude=%ld.%02ld, "
+          "date=%02u/%02u/%04u "
+          "%02u:%02u:%02u\r\n",
+          latitude_whole,
+          latitude_frac,
+          longitude_whole,
+          longitude_frac,
+          time.tm_mon + 1,
+          time.tm_mday,
+          time.tm_year + 1900,
+          time.tm_hour,
+          time.tm_min,
+          time.tm_sec);
+    } else {
+        printf("RTC backup not valid\r\n");
     }
 }
 
