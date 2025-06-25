@@ -31,12 +31,6 @@
 #define RTC_PREDIV_A 127
 static_assert((RTC_PREDIV_S + 1) * (RTC_PREDIV_A + 1) == 32768);
 
-#if PLATFORM_USES_LSE
-#define RTC_CLKSOURCE LL_RCC_RTC_CLKSOURCE_LSE
-#else // PLATFORM_USES_LSE
-#define RTC_CLKSOURCE LL_RCC_RTC_CLKSOURCE_LSI
-#endif // PLATFORM_USES_LSE
-
 #define DEG_TO_RAD(x) ((x) * 3.14159265358979323846f / 180.0f)
 
 static StreamBufferHandle_t uart_stream = NULL;
@@ -205,13 +199,13 @@ static void gps_rx_task(void* args) {
                     memcpy(&longitude_bits, &gps_longitude, sizeof(float));
                     LL_RTC_BKP_SetRegister(RTC, LL_RTC_BKP_DR2, longitude_bits);
 
-                    if (!backup_regs_valid) {
-                        LL_RTC_BKP_SetRegister(RTC, LL_RTC_BKP_DR0, RTC_VALID_MAGIC);
-                        xEventGroupSetBits(gps_events, 1);
-                        backup_regs_valid = true;
-                    }
-
                     if (time_location_updated) {
+                        if (!backup_regs_valid) {
+                            LL_RTC_BKP_SetRegister(RTC, LL_RTC_BKP_DR0, RTC_VALID_MAGIC);
+                            xEventGroupSetBits(gps_events, 1);
+                            backup_regs_valid = true;
+                        }
+
                         int32_t latitude_whole = (int32_t)latitude;
                         int32_t latitude_frac = (int32_t)((latitude - latitude_whole) * 100);
                         if (latitude_frac < 0) {
@@ -267,15 +261,6 @@ void USART1_IRQHandler(void) {
 }
 
 static void rtc_init(void) {
-    LL_PWR_EnableBkUpAccess();
-    while (!LL_PWR_IsEnabledBkUpAccess())
-        ;
-
-    if (LL_RCC_GetRTCClockSource() != RTC_CLKSOURCE) {
-        LL_RCC_ForceBackupDomainReset();
-        LL_RCC_ReleaseBackupDomainReset();
-        LL_RCC_SetRTCClockSource(RTC_CLKSOURCE);
-    }
     LL_RCC_EnableRTC();
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_RTCAPB);
 

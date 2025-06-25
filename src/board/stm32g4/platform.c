@@ -100,12 +100,26 @@ void platform_init(void) {
     LL_RCC_PLL_ConfigDomain_SYS(LL_RCC_PLLSOURCE_HSI, LL_RCC_PLLM_DIV_4, 85, LL_RCC_PLLR_DIV_2);
 #endif // PLATFORM_USES_EXTERNAL_CLOCK
 
-#if PLATFORM_USES_LSE
-    // enable LSE
+#if PLATFORM_USES_LSE || PLATFORM_USES_RTC
     LL_PWR_EnableBkUpAccess();
     while (!LL_PWR_IsEnabledBkUpAccess())
         ;
+#endif // PLATFORM_USES_LSE || PLATFORM_USES_RTC
 
+#if PLATFORM_USES_RTC
+#if PLATFORM_USES_LSE
+    uint32_t rtc_clk = LL_RCC_RTC_CLKSOURCE_LSE;
+#else  // PLATFORM_USES_LSE
+    uint32_t rtc_clk = LL_RCC_RTC_CLKSOURCE_LSI;
+#endif // PLATFORM_USES_LSE
+    if (LL_RCC_GetRTCClockSource() != rtc_clk) {
+        LL_RCC_ForceBackupDomainReset();
+        LL_RCC_ReleaseBackupDomainReset();
+        LL_RCC_SetRTCClockSource(rtc_clk);
+    }
+#endif // PLATFORM_USES_RTC
+
+#if PLATFORM_USES_LSE
     // LL_RCC_LSE_EnableBypass(); // TODO: using oscillator instead of crystal
     LL_RCC_LSE_Enable();
     while (!LL_RCC_LSE_IsReady())
