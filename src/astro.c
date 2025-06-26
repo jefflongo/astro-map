@@ -88,7 +88,7 @@ void get_stars(
             intensity_normed = fmaxf(0, fminf(intensity_normed, 1));
 
             star_t star = {
-                .x = r * sinf(azimuth),
+                .x = -r * sinf(azimuth),
                 .y = r * cosf(azimuth),
                 .intensity = intensity_normed,
             };
