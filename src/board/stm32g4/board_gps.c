@@ -347,6 +347,41 @@ static void uart_init(void) {
         ;
 }
 
+static void pps_led_init(void) {
+    LL_GPIO_ResetOutputPin(LED_PORT, LED_PIN);
+    LL_GPIO_SetPinMode(LED_PORT, LED_PIN, LL_GPIO_MODE_OUTPUT);
+    LL_GPIO_SetPinOutputType(LED_PORT, LED_PIN, LL_GPIO_OUTPUT_PUSHPULL);
+
+    LL_GPIO_SetPinPull(GPS_PPS_PORT, GPS_PPS_PIN, LL_GPIO_PULL_DOWN);
+    LL_GPIO_SetPinMode(GPS_PPS_PORT, GPS_PPS_PIN, LL_GPIO_MODE_INPUT);
+
+    LL_SYSCFG_SetEXTISource(GPS_PPS_SYSCFG_EXTI_PORT, GPS_PPS_SYSCFG_EXTI_LINE);
+    LL_EXTI_InitTypeDef conn_irq_conf = {
+        .Line_0_31 = GPS_PPS_EXTI_LINE,
+        .Line_32_63 = 0,
+        .LineCommand = ENABLE,
+        .Mode = LL_EXTI_MODE_IT,
+        .Trigger = LL_EXTI_TRIGGER_RISING_FALLING,
+    };
+    LL_EXTI_Init(&conn_irq_conf);
+
+    NVIC_SetPriority(GPS_PPS_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 7, 0));
+    NVIC_EnableIRQ(GPS_PPS_IRQn);
+}
+
+void GPS_PPS_IRQHandler(void) {
+    if (LL_EXTI_IsActiveFlag_0_31(GPS_PPS_EXTI_LINE)) {
+        LL_EXTI_ClearFlag_0_31(GPS_PPS_EXTI_LINE);
+        if (LL_GPIO_IsInputPinSet(GPS_PPS_PORT, GPS_PPS_PIN)) {
+            LL_GPIO_SetOutputPin(LED_PORT, LED_PIN);
+        } else {
+            LL_GPIO_ResetOutputPin(LED_PORT, LED_PIN);
+        }
+    }
+
+    portYIELD_FROM_ISR(pdFALSE);
+}
+
 static bool set_configuration_items(void const* configuration_data, uint16_t len) {
     // create a UBX-CFG-VALSET message
     uint16_t message_length = 12 + len;
@@ -377,34 +412,36 @@ static bool set_configuration_items(void const* configuration_data, uint16_t len
             ;
         LL_USART_TransmitData8(USART1, message[i]);
     }
+    while (!LL_USART_IsActiveFlag_TC(USART1))
+        ;
 
     return true;
 
     // TODO: figure out why this isn't reliable
-    // // receive a UBX-ACK-ACK/NACK response
-    // uint8_t response[10];
-    // for (uint8_t i = 0; i < 10; i++) {
-    //     while (!LL_USART_IsActiveFlag_RXNE(USART1))
-    //         ;
-    //     response[i] = LL_USART_ReceiveData8(USART1);
-    // }
-    // // response checksum (skip header)
-    // uint8_t ck_a = 0, ck_b = 0;
-    // for (uint16_t i = 2; i < 10 - 2; i++) {
-    //     ck_a += response[i];
-    //     ck_b += ck_a;
-    // }
+    // receive a UBX-ACK-ACK/NACK response
+    uint8_t response[10];
+    for (uint8_t i = 0; i < 10; i++) {
+        while (!LL_USART_IsActiveFlag_RXNE(USART1))
+            ;
+        response[i] = LL_USART_ReceiveData8(USART1);
+    }
+    // response checksum (skip header)
+    uint8_t ck_a = 0, ck_b = 0;
+    for (uint16_t i = 2; i < 10 - 2; i++) {
+        ck_a += response[i];
+        ck_b += ck_a;
+    }
 
-    // // check for valid UBX-ACK-ACK
-    // bool valid = response[0] == 0xb5 && response[1] == 0x62;     // check header
-    // valid = valid && response[2] == 0x05;                        // check class
-    // valid = valid && response[3] == 0x01;                        // check id
-    // valid = valid && response[4] == 2 && response[5] == 0;       // check length
-    // valid = valid && response[6] == 0x06;                        // check acked class
-    // valid = valid && response[7] == 0x8a;                        // check acked id
-    // valid = valid && response[8] == ck_a && response[9] == ck_b; // check checksum
+    // check for valid UBX-ACK-ACK
+    bool valid = response[0] == 0xb5 && response[1] == 0x62;     // check header
+    valid = valid && response[2] == 0x05;                        // check class
+    valid = valid && response[3] == 0x01;                        // check id
+    valid = valid && response[4] == 2 && response[5] == 0;       // check length
+    valid = valid && response[6] == 0x06;                        // check acked class
+    valid = valid && response[7] == 0x8a;                        // check acked id
+    valid = valid && response[8] == ck_a && response[9] == ck_b; // check checksum
 
-    // return valid;
+    return valid;
 }
 
 static bool gps_configure(void) {
@@ -439,6 +476,7 @@ bool board_gps_init(void) {
     // initialize interfaces
     rtc_init();
     uart_init();
+    pps_led_init();
     bool ret = gps_configure();
 
     // launch processing task

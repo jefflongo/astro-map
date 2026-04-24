@@ -15,6 +15,9 @@ int _write(int fd, char const* buf, int count) {
             ;
         LL_USART_TransmitData8(USART2, buf[i]);
     }
+    while (!LL_USART_IsActiveFlag_TC(USART1))
+        ;
+
     return count;
 }
 
